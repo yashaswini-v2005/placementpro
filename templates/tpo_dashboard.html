@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}TPO Dashboard – PlacementPro{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>👨‍💼 TPO Control Center</h1>
+  <p>Manage placement drives, track applicants, and coordinate rounds.</p>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card"><div class="num">{{ total_students }}</div><div class="label">Total Students</div></div>
+  <div class="stat-card"><div class="num">{{ active_drives|length }}</div><div class="label">Active Drives</div></div>
+  <div class="stat-card"><div class="num">{{ total_apps }}</div><div class="label">Applications</div></div>
+  <div class="stat-card" style="border-top:3px solid var(--green);">
+    <div class="num" style="color:var(--green);">{{ placed_count }}</div><div class="label">Students Placed</div>
+  </div>
+</div>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+  <h2 style="font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:700;">🟢 Active Drives</h2>
+  <div style="display:flex;gap:0.5rem;">
+    <a href="/tpo/stats" class="btn btn-ghost">📊 Analytics</a>
+    <a href="/tpo/drive/create" class="btn btn-primary">+ Create Drive</a>
+  </div>
+</div>
+
+{% if active_drives %}
+<div style="background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); margin-bottom:2rem;">
+  <table>
+    <thead>
+      <tr>
+        <th>Company / Role</th>
+        <th>Package</th>
+        <th>Location</th>
+        <th>Criteria</th>
+        <th>Branches</th>
+        <th>Deadline</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in active_drives %}
+      <tr>
+        <td>
+          <div style="font-weight:700; font-family:'Syne',sans-serif;">{{ d.company }}</div>
+          <div style="color:var(--muted); font-size:0.82rem;">{{ d.role }}</div>
+          {% if d.job_type %}<span class="badge badge-blue" style="font-size:0.65rem;">{{ d.job_type }}</span>{% endif %}
+        </td>
+        <td>
+          {% if d.package_lpa and d.package_lpa > 0 %}
+          <span style="font-weight:700; color:var(--green);">₹{{ d.package_lpa }} LPA</span>
+          {% else %}<span style="color:var(--muted);">—</span>{% endif %}
+        </td>
+        <td style="font-size:0.82rem; color:var(--muted);">{{ d.location or '—' }}</td>
+        <td>
+          <span class="badge badge-blue">CGPA ≥ {{ d.min_cgpa }}</span><br>
+          <span class="badge badge-gray" style="margin-top:3px;">{{ d.max_backlogs }} Backlogs</span>
+        </td>
+        <td style="font-size:0.82rem; color:var(--muted);">{{ d.allowed_branches }}</td>
+        <td style="font-size:0.85rem;">{{ d.deadline or '—' }}</td>
+        <td>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <a href="/tpo/drive/{{ d.id }}" class="btn btn-ghost btn-sm">View →</a>
+            <form method="POST" action="/tpo/notify/{{ d.id }}" style="display:inline;">
+              <button class="btn btn-primary btn-sm" type="submit">🔔 Notify</button>
+            </form>
+            <form method="POST" action="/tpo/drive/{{ d.id }}/complete" style="display:inline;"
+              onsubmit="return confirm('Mark this drive as completed?')">
+              <button class="btn btn-sm" style="background:#fef2f2;color:var(--red);border:1px solid #fca5a5;" type="submit">✅ Done</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card" style="text-align:center; padding:3rem; color:var(--muted); margin-bottom:2rem;">
+  <div style="font-size:3rem; margin-bottom:1rem;">🎯</div>
+  <p>No active drives. <a href="/tpo/drive/create">Create your first drive</a>.</p>
+</div>
+{% endif %}
+
+{% if completed_drives %}
+<h2 style="font-family:'Syne',sans-serif; font-size:1.05rem; font-weight:700; margin-bottom:0.75rem; color:var(--muted);">🏁 Completed Drives</h2>
+<div style="background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); opacity:0.8;">
+  <table>
+    <thead><tr><th>Company / Role</th><th>Package</th><th>Criteria</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for d in completed_drives %}
+      <tr>
+        <td>
+          <div style="font-weight:600;">{{ d.company }}</div>
+          <div style="font-size:0.82rem; color:var(--muted);">{{ d.role }}</div>
+        </td>
+        <td>{% if d.package_lpa and d.package_lpa > 0 %}<span style="color:var(--green);font-weight:600;">₹{{ d.package_lpa }} LPA</span>{% else %}—{% endif %}</td>
+        <td><span class="badge badge-gray">CGPA ≥ {{ d.min_cgpa }}</span></td>
+        <td><a href="/tpo/drive/{{ d.id }}" class="btn btn-ghost btn-sm">View Results →</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

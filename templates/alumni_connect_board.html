@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}Alumni Connect – PlacementPro{% endblock %}
+{% block extra_style %}
+<style>
+.connect-tab { padding:0.6rem 1.25rem; border:none; background:none; cursor:pointer; font-size:0.875rem; font-weight:600; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-2px; font-family:'Inter',sans-serif; }
+.connect-tab.active { color:var(--blue); border-bottom-color:var(--blue); }
+.referral-card { background:white; border:1px solid var(--border); border-left:4px solid var(--blue); border-radius:12px; padding:1.25rem 1.4rem; box-shadow:var(--shadow); }
+.alumni-net-card { background:white; border:1px solid var(--border); border-radius:14px; padding:1.25rem; box-shadow:var(--shadow); transition:all 0.2s; }
+.alumni-net-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+.avatar-circle { width:52px; height:52px; border-radius:50%; background:linear-gradient(135deg,#1d4ed8,#7c3aed); display:flex; align-items:center; justify-content:center; color:white; font-weight:800; font-size:1.2rem; flex-shrink:0; }
+.slot-row { background:white; border:1px solid var(--border); border-radius:10px; padding:1rem 1.25rem; display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem; box-shadow:var(--shadow); }
+.ref-status-requested { background:#eff6ff; color:#1d4ed8; }
+.ref-status-approved { background:#f0fdf4; color:#15803d; }
+.ref-status-referred { background:#f5f3ff; color:#7c3aed; }
+.ref-status-rejected { background:#fef2f2; color:#dc2626; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🌐 Alumni Connect Board</h1>
+  <p>Job referrals, mentorship slots, and your alumni network — all in one place.</p>
+</div>
+
+<div style="display:flex; gap:0.25rem; margin-bottom:1.75rem; border-bottom:2px solid var(--border);">
+  <button onclick="showPane('referrals')" id="tab-referrals" class="connect-tab active">🤝 Job Referrals ({{ referrals|length }})</button>
+  <button onclick="showPane('mentorship')" id="tab-mentorship" class="connect-tab">📅 Mentorship ({{ slots|length }} open)</button>
+  <button onclick="showPane('network')" id="tab-network" class="connect-tab">👥 Alumni Network ({{ alumni_list|length }})</button>
+</div>
+
+<!-- JOB REFERRALS -->
+<div id="pane-referrals">
+  {% if session.role == 'alumni' %}
+  <div style="display:flex; justify-content:flex-end; margin-bottom:1rem;">
+    <a href="/alumni/referral/post" class="btn btn-primary">+ Post New Referral</a>
+  </div>
+  {% endif %}
+  {% if referrals %}
+  <div style="display:flex; flex-direction:column; gap:0.75rem;">
+    {% for r in referrals %}
+    {% set my_req = my_req_map.get(r.id) if my_req_map is defined else None %}
+    <div class="referral-card">
+      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:0.5rem;">
+        <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+          <span style="font-family:'Syne',sans-serif; font-weight:800; font-size:1.15rem;">{{ r.company }}</span>
+          <span class="badge badge-blue">{{ r.role }}</span>
+          {% if r.job_type %}<span class="badge badge-gray">{{ r.job_type }}</span>{% endif %}
+        </div>
+        <!-- Status badge if student has requested -->
+        {% if my_req %}
+        <span class="badge ref-status-{{ my_req }}" style="padding:0.3rem 0.8rem; font-size:0.75rem; font-weight:700;">
+          {% if my_req == 'requested' %}🔵 Requested
+          {% elif my_req == 'approved' %}🟢 Approved
+          {% elif my_req == 'referred' %}🟣 Referred
+          {% elif my_req == 'rejected' %}🔴 Not Selected{% endif %}
+        </span>
+        {% endif %}
+      </div>
+      <div style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-bottom:0.5rem;">
+        <div style="font-size:0.8rem; color:var(--muted);">By <strong>{{ r.alumni_name }}</strong> · {{ r.alumni_role }} · Batch '{{ r.batch_year[-2:] if r.batch_year else '' }}</div>
+        {% if r.location %}<div style="font-size:0.8rem; color:var(--muted);">📍 {{ r.location }}</div>{% endif %}
+        {% if r.package_lpa and r.package_lpa > 0 %}<div style="font-size:0.8rem; font-weight:700; color:var(--green);">💰 ₹{{ r.package_lpa }} LPA</div>{% endif %}
+      </div>
+      <p style="font-size:0.85rem; color:var(--text); margin-bottom:0.75rem; line-height:1.5;">{{ r.description }}</p>
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        {% if r.deadline %}
+        <div style="font-size:0.8rem; color:var(--red); font-weight:700;">🕐 DEADLINE: {{ r.deadline }}</div>
+        {% endif %}
+        {% if r.jd_link %}<a href="{{ r.jd_link }}" target="_blank" class="btn btn-ghost btn-sm">View JD →</a>{% endif %}
+        {% if session.role == 'student' %}
+          {% if not my_req %}
+          <button onclick="openRefModal({{ r.id }}, '{{ r.company }}', '{{ r.role }}')" class="btn btn-primary btn-sm" style="margin-left:auto;">🔵 Request Referral</button>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:3rem;color:var(--muted);">
+    <div style="font-size:3rem;margin-bottom:1rem;">🤝</div>No referral posts yet.
+  </div>
+  {% endif %}
+</div>
+
+<!-- MENTORSHIP -->
+<div id="pane-mentorship" style="display:none;">
+  {% if session.role == 'alumni' %}
+  <div style="display:flex;justify-content:flex-end;margin-bottom:1rem;">
+    <a href="/alumni/slot/add" class="btn btn-success">+ Add Slot</a>
+  </div>
+  {% endif %}
+  {% if slots %}
+  {% for s in slots %}
+  <div class="slot-row">
+    <div>
+      <div style="font-weight:700;font-size:0.95rem;">{{ s.topic }}</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-top:0.15rem;">
+        📅 {{ s.slot_date }} · ⏰ {{ s.slot_time }} · By <strong>{{ s.alumni_name }}</strong> ({{ s.alumni_role }} @ {{ s.company }})
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:1rem;">
+      <span style="color:#15803d;font-size:0.75rem;font-weight:700;">✅ AVAILABLE</span>
+      {% if session.role == 'student' %}
+      <form method="POST" action="/connect/book/{{ s.id }}">
+        <button type="submit" class="btn btn-primary btn-sm">Book →</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="card" style="text-align:center;padding:3rem;color:var(--muted);">
+    <div style="font-size:3rem;margin-bottom:1rem;">📅</div>No open slots right now.
+  </div>
+  {% endif %}
+</div>
+
+<!-- ALUMNI NETWORK -->
+<div id="pane-network" style="display:none;">
+  {% if alumni_list %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">
+    {% for a in alumni_list %}
+    <div class="alumni-net-card">
+      <div style="display:flex;gap:0.9rem;align-items:start;margin-bottom:0.75rem;">
+        <div class="avatar-circle">{{ a.name[0] }}</div>
+        <div>
+          <div style="font-weight:800;font-family:'Syne',sans-serif;">{{ a.name }}</div>
+          <div style="font-size:0.82rem;color:var(--blue);font-weight:600;">{{ a.role }} @ {{ a.company }}</div>
+          <div style="font-size:0.75rem;color:var(--muted);">Batch {{ a.batch_year }} · {{ a.branch }}</div>
+        </div>
+      </div>
+      {% if a.bio %}<p style="font-size:0.82rem;color:var(--text);line-height:1.5;margin-bottom:0.75rem;">{{ a.bio[:110] }}{% if a.bio|length > 110 %}...{% endif %}</p>{% endif %}
+      {% if a.open_to_mentor %}
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:0.4rem 0.75rem;display:inline-flex;align-items:center;gap:0.4rem;">
+        <span style="color:#16a34a;font-size:0.75rem;font-weight:700;">✅ AVAILABLE FOR MENTORING</span>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- REFERRAL REQUEST MODAL -->
+<div id="refModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:16px;padding:2rem;width:440px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:800;margin-bottom:0.5rem;" id="refModalTitle">Request Referral</h3>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">Tell the alumni why you'd be a good fit.</p>
+    <form method="POST" id="refModalForm">
+      <div class="form-group">
+        <label>Your message</label>
+        <textarea name="message" rows="3" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:inherit;" placeholder="Hi! I'm a CS final year with strong DSA skills and relevant project experience. Would love a referral..."></textarea>
+      </div>
+      <div style="display:flex;gap:0.75rem;">
+        <button type="submit" class="btn btn-primary" style="flex:1;">🔵 Send Request</button>
+        <button type="button" onclick="closeRefModal()" class="btn btn-ghost">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_script %}
+<script>
+function showPane(name) {
+  ['referrals','mentorship','network'].forEach(p => {
+    document.getElementById('pane-'+p).style.display = p===name?'':'none';
+    document.getElementById('tab-'+p).classList.toggle('active',p===name);
+  });
+}
+function openRefModal(id, company, role) {
+  document.getElementById('refModalTitle').textContent = `Request Referral — ${company} (${role})`;
+  document.getElementById('refModalForm').action = `/connect/request-referral/${id}`;
+  document.getElementById('refModal').style.display = 'flex';
+}
+function closeRefModal() { document.getElementById('refModal').style.display='none'; }
+</script>
+{% endblock %}

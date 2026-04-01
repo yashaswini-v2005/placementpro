@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% block title %}Analytics – PlacementPro{% endblock %}
+{% block extra_style %}
+<style>
+.metric-card { background:white; border:1px solid var(--border); border-radius:14px; padding:1.5rem; box-shadow:var(--shadow); position:relative; overflow:hidden; }
+.metric-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
+.metric-blue::before  { background:var(--blue); }
+.metric-green::before { background:var(--green); }
+.metric-amber::before { background:var(--amber); }
+.metric-red::before   { background:var(--red); }
+.metric-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; margin-bottom:0.75rem; }
+.icon-blue  { background:#eff6ff; }
+.icon-green { background:#f0fdf4; }
+.icon-amber { background:#fffbeb; }
+.icon-red   { background:#fef2f2; }
+.metric-num { font-family:'Syne',sans-serif; font-size:2.2rem; font-weight:800; color:var(--dark); line-height:1; }
+.metric-label { font-size:0.78rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-top:0.25rem; }
+.chart-bar-row { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.65rem; }
+.chart-bar-label { font-size:0.83rem; font-weight:600; min-width:130px; color:var(--text); }
+.chart-bar-track { flex:1; height:10px; background:var(--bg); border-radius:20px; overflow:hidden; border:1px solid var(--border); }
+.chart-bar-fill { height:100%; border-radius:20px; transition:width 0.8s ease; }
+.bar-blue   { background:linear-gradient(90deg, #2563eb, #60a5fa); }
+.bar-green  { background:linear-gradient(90deg, #16a34a, #4ade80); }
+.bar-amber  { background:linear-gradient(90deg, #d97706, #fbbf24); }
+.bar-red    { background:linear-gradient(90deg, #dc2626, #f87171); }
+.bar-purple { background:linear-gradient(90deg, #7c3aed, #a78bfa); }
+.status-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.funnel-step { display:flex; align-items:center; gap:1rem; padding:0.75rem 1rem; border-radius:10px; margin-bottom:0.5rem; }
+.insight-item { display:flex; align-items:start; gap:0.75rem; padding:0.75rem 0; border-bottom:1px solid var(--border); }
+.insight-item:last-child { border-bottom:none; }
+.insight-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.9rem; flex-shrink:0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="/tpo" style="color:var(--muted);font-size:0.85rem;">← Dashboard</a>
+  <h1>📊 Placement Analytics</h1>
+  <p>Data-driven insights on placement performance, trends, and student outcomes.</p>
+</div>
+
+<!-- KPI METRICS ROW -->
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.75rem;">
+  <div class="metric-card metric-blue">
+    <div class="metric-icon icon-blue">👨‍🎓</div>
+    <div class="metric-num">{{ stats.total_students }}</div>
+    <div class="metric-label">Total Students</div>
+  </div>
+  <div class="metric-card metric-amber">
+    <div class="metric-icon icon-amber">🎯</div>
+    <div class="metric-num">{{ stats.total_drives }}</div>
+    <div class="metric-label">Drives Conducted</div>
+  </div>
+  <div class="metric-card metric-red">
+    <div class="metric-icon icon-red">📬</div>
+    <div class="metric-num">{{ stats.total_apps }}</div>
+    <div class="metric-label">Applications</div>
+  </div>
+  <div class="metric-card metric-green">
+    <div class="metric-icon icon-green">🏆</div>
+    <div class="metric-num" style="color:var(--green);">{{ stats.placement_rate }}%</div>
+    <div class="metric-label">Placement Rate</div>
+    <div style="margin-top:0.75rem;font-size:0.78rem;color:var(--green);font-weight:600;">{{ stats.selected }} students selected</div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+
+  <!-- TOP COMPANIES -->
+  <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:1.5rem;box-shadow:var(--shadow);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+      <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;">🏢 Top Drives by Applications</div>
+      <span class="badge badge-blue">Top {{ stats.top_drives|length }}</span>
+    </div>
+    {% set colors_list = ['bar-blue','bar-green','bar-amber','bar-red','bar-purple'] %}
+    {% if stats.top_drives %}
+      {% set maxapps = stats.top_drives[0].applicants if stats.top_drives[0].applicants > 0 else 1 %}
+      {% for d in stats.top_drives %}
+      <div class="chart-bar-row">
+        <div class="chart-bar-label">
+          <div style="font-weight:700;font-size:0.85rem;">{{ d.company }}</div>
+          <div style="font-size:0.73rem;color:var(--muted);">{{ d.role }}</div>
+        </div>
+        <div class="chart-bar-track">
+          <div class="chart-bar-fill {{ colors_list[loop.index0 % 5] }}" style="width:{{ [(d.applicants / maxapps * 100)|int, 4]|max }}%;"></div>
+        </div>
+        <span style="font-weight:800;font-size:0.9rem;min-width:28px;text-align:right;color:var(--dark);">{{ d.applicants }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="color:var(--muted);text-align:center;padding:1.5rem;">No drive data yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- PLACEMENT FUNNEL -->
+  <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:1.5rem;box-shadow:var(--shadow);">
+    <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1.25rem;">🔽 Placement Funnel</div>
+    {% set funnel = [
+      ('Applied',    stats.total_apps,    '#eff6ff', '#2563eb', '📬'),
+      ('Aptitude',   stats.status_dist|selectattr('status','equalto','aptitude')|map(attribute='count')|first|default(0), '#fffbeb', '#d97706', '📝'),
+      ('Interview',  stats.status_dist|selectattr('status','equalto','interview_scheduled')|map(attribute='count')|first|default(0), '#f0f9ff', '#0ea5e9', '📅'),
+      ('Selected',   stats.selected, '#f0fdf4', '#16a34a', '🎉'),
+    ] %}
+    {% set base = stats.total_apps if stats.total_apps > 0 else 1 %}
+    {% for label, count, bg, col, icon in funnel %}
+    <div class="funnel-step" style="background:{{ bg }};">
+      <span style="font-size:1.1rem;">{{ icon }}</span>
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="font-weight:700;font-size:0.9rem;color:{{ col }};">{{ label }}</span>
+          <span style="font-weight:800;font-size:0.95rem;color:var(--dark);">{{ count }}</span>
+        </div>
+        <div style="background:rgba(0,0,0,0.08);height:6px;border-radius:10px;margin-top:0.3rem;overflow:hidden;">
+          <div style="height:100%;border-radius:10px;background:{{ col }};width:{{ [(count / base * 100)|int, 3]|max }}%;"></div>
+        </div>
+      </div>
+      <span style="font-size:0.78rem;color:var(--muted);min-width:36px;text-align:right;">{{ [(count / base * 100)|int, 0]|max }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+
+  <!-- BRANCH DISTRIBUTION -->
+  <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:1.5rem;box-shadow:var(--shadow);">
+    <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1.25rem;">🎓 Students by Branch</div>
+    {% set branch_colors = ['bar-blue','bar-green','bar-amber','bar-red','bar-purple'] %}
+    {% if stats.branch_stats %}
+      {% set max_b = stats.branch_stats[0].count if stats.branch_stats[0].count > 0 else 1 %}
+      {% set total_s = stats.branch_stats|sum(attribute='count') %}
+      {% for b in stats.branch_stats %}
+      <div class="chart-bar-row">
+        <div class="chart-bar-label">
+          <span style="font-weight:700;font-size:0.85rem;">{{ b.branch }}</span>
+          <span style="font-size:0.72rem;color:var(--muted);margin-left:0.4rem;">({{ [(b.count / total_s * 100)|int, 0]|max }}%)</span>
+        </div>
+        <div class="chart-bar-track">
+          <div class="chart-bar-fill {{ branch_colors[loop.index0 % 5] }}" style="width:{{ [(b.count / max_b * 100)|int, 4]|max }}%;"></div>
+        </div>
+        <span style="font-weight:800;font-size:0.9rem;min-width:24px;text-align:right;">{{ b.count }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="color:var(--muted);text-align:center;padding:1.5rem;">No branch data yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- APPLICATION STATUS DISTRIBUTION -->
+  <div style="background:white;border:1px solid var(--border);border-radius:14px;padding:1.5rem;box-shadow:var(--shadow);">
+    <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1.25rem;">📋 Application Status Distribution</div>
+    {% set st_config = {
+      'applied':              ('#eff6ff','#2563eb','bar-blue'),
+      'aptitude':             ('#fffbeb','#d97706','bar-amber'),
+      'interview_scheduled':  ('#f0f9ff','#0ea5e9','bar-blue'),
+      'selected':             ('#f0fdf4','#16a34a','bar-green'),
+      'rejected':             ('#fef2f2','#dc2626','bar-red'),
+    } %}
+    {% set total_a = stats.total_apps if stats.total_apps > 0 else 1 %}
+    {% if stats.status_dist %}
+      {% for s in stats.status_dist %}
+      {% set cfg = st_config.get(s.status, ('#f8fafc','#64748b','')) %}
+      <div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0.75rem;border-radius:8px;margin-bottom:0.4rem;background:{{ cfg[0] }};">
+        <div class="status-dot" style="background:{{ cfg[1] }};"></div>
+        <span style="font-size:0.85rem;font-weight:600;flex:1;color:{{ cfg[1] }};">{{ s.status.replace('_',' ').title() }}</span>
+        <div style="width:90px;height:8px;background:rgba(0,0,0,0.08);border-radius:10px;overflow:hidden;">
+          <div style="height:100%;border-radius:10px;background:{{ cfg[1] }};width:{{ [(s.count / total_a * 100)|int, 2]|max }}%;"></div>
+        </div>
+        <span style="font-weight:800;min-width:28px;text-align:right;font-size:0.9rem;color:var(--dark);">{{ s.count }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="color:var(--muted);text-align:center;padding:1.5rem;">No data yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- INSIGHTS PANEL -->
+<div style="background:white;border:1px solid var(--border);border-radius:14px;padding:1.5rem;box-shadow:var(--shadow);">
+  <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1.25rem;">💡 Key Insights</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+    <div class="insight-item">
+      <div class="insight-icon" style="background:#eff6ff;">📊</div>
+      <div><div style="font-weight:700;font-size:0.9rem;">Total Drives Conducted</div>
+        <div style="font-size:0.83rem;color:var(--muted);">{{ stats.total_drives }} drives posted by TPO across all companies</div></div>
+    </div>
+    <div class="insight-item">
+      <div class="insight-icon" style="background:#f0fdf4;">🏆</div>
+      <div><div style="font-weight:700;font-size:0.9rem;">Placement Rate</div>
+        <div style="font-size:0.83rem;color:var(--muted);">{{ stats.placement_rate }}% of students have been placed ({{ stats.selected }} of {{ stats.total_students }})</div></div>
+    </div>
+    <div class="insight-item" style="border-bottom:none;">
+      <div class="insight-icon" style="background:#fffbeb;">📬</div>
+      <div><div style="font-weight:700;font-size:0.9rem;">Avg Applications / Student</div>
+        <div style="font-size:0.83rem;color:var(--muted);">{{ "%.1f"|format(stats.total_apps / stats.total_students) if stats.total_students else '0' }} applications per student on average</div></div>
+    </div>
+    <div class="insight-item" style="border-bottom:none;">
+      <div class="insight-icon" style="background:#fef2f2;">⚡</div>
+      <div><div style="font-weight:700;font-size:0.9rem;">Conversion Rate</div>
+        <div style="font-size:0.83rem;color:var(--muted);">{{ "%.1f"|format(stats.selected / stats.total_apps * 100) if stats.total_apps else '0' }}% of all applications resulted in selection</div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

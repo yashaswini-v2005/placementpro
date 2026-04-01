@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block title %}Resume Wizard – PlacementPro{% endblock %}
+{% block extra_style %}
+<style>
+.quality-meter { position:relative; height:120px; width:120px; margin:0 auto 1rem; }
+.quality-ring { transform:rotate(-90deg); }
+.quality-circle { fill:none; stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset 1s ease; }
+.quality-bg { stroke:#e2e8f0; }
+.quality-fg { stroke:var(--blue); }
+.quality-number { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-family:'Syne',sans-serif; font-size:1.6rem; font-weight:800; color:var(--dark); }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="/student" style="color:var(--muted); font-size:0.85rem;">← Dashboard</a>
+  <h1>📄 Resume Wizard</h1>
+  <p>Generate a professional, professional PDF resume from your profile in one click.</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start;">
+
+  <!-- QUALITY METER + PREVIEW -->
+  <div>
+    <!-- RESUME QUALITY METER -->
+    <div class="card" style="border-top:3px solid var(--blue); margin-bottom:1.25rem; text-align:center;" id="qualityCard">
+      <div class="card-title" style="text-align:left;">🎯 Resume Quality Meter</div>
+      <div class="quality-meter">
+        <svg class="quality-ring" width="120" height="120" viewBox="0 0 120 120">
+          <circle class="quality-circle quality-bg" cx="60" cy="60" r="50"/>
+          <circle class="quality-circle quality-fg" id="qualityArc" cx="60" cy="60" r="50"
+            stroke-dasharray="314" stroke-dashoffset="314"/>
+        </svg>
+        <div class="quality-number" id="qualityScore">—</div>
+      </div>
+      <div id="qualityLabel" style="font-size:0.85rem; color:var(--muted); margin-bottom:1rem;">Loading...</div>
+      <div id="qualityTips" style="text-align:left;"></div>
+    </div>
+
+    <!-- PROFILE PREVIEW -->
+    <div class="card" style="border-top:3px solid var(--blue);">
+      <div class="card-title">📋 Profile Preview</div>
+      {% if profile %}
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.75rem; margin-bottom:1.25rem;">
+        <div style="text-align:center; background:var(--bg); border-radius:10px; padding:1rem;">
+          <div style="font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:var(--blue);">{{ profile.cgpa }}</div>
+          <div style="font-size:0.75rem; color:var(--muted); font-weight:600; text-transform:uppercase;">CGPA</div>
+        </div>
+        <div style="text-align:center; background:var(--bg); border-radius:10px; padding:1rem;">
+          <div style="font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:var(--blue);">{{ profile.backlogs }}</div>
+          <div style="font-size:0.75rem; color:var(--muted); font-weight:600; text-transform:uppercase;">Backlogs</div>
+        </div>
+        <div style="text-align:center; background:var(--bg); border-radius:10px; padding:1rem;">
+          <div style="font-family:'Syne',sans-serif; font-size:1.8rem; font-weight:800; color:var(--blue);">{{ profile.branch }}</div>
+          <div style="font-size:0.75rem; color:var(--muted); font-weight:600; text-transform:uppercase;">Branch</div>
+        </div>
+      </div>
+
+      {% set skills = profile.skills|from_json if profile.skills else [] %}
+      {% if skills %}
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.78rem; font-weight:700; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem;">Skills ({{ skills|length }})</div>
+        <div style="display:flex; flex-wrap:wrap; gap:0.35rem;">
+          {% for s in skills %}<span class="badge badge-blue">{{ s }}</span>{% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% set projects = profile.projects|from_json if profile.projects else [] %}
+      {% if projects %}
+      <div>
+        <div style="font-size:0.78rem; font-weight:700; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem;">Projects ({{ projects|length }})</div>
+        {% for p in projects %}
+        <div style="background:var(--bg); border-radius:8px; padding:0.65rem 0.9rem; margin-bottom:0.5rem;">
+          <div style="font-weight:600; font-size:0.88rem;">{{ p.name }}</div>
+          <div style="font-size:0.8rem; color:var(--muted);">{{ p.desc }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div style="text-align:center; padding:2rem; color:var(--muted);">
+        <div style="font-size:2.5rem; margin-bottom:0.75rem;">⚠️</div>
+        Profile is empty. <a href="/student/profile">Complete your profile</a> first.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- GENERATE PANEL -->
+  <div>
+    <div class="card" style="text-align:center; padding:2.5rem; border:2px dashed var(--border);">
+      <div style="font-size:4rem; margin-bottom:1rem;">📄</div>
+      <p style="font-size:1rem;font-weight:600;color:var(--text);margin-bottom:0.5rem;">Professional PDF Resume</p>
+      <p style="color:var(--muted); font-size:0.88rem; margin-bottom:1.5rem; line-height:1.6;">
+        Generate a standardized PDF resume in seconds. Clean, recruiter-friendly layout with your college's branding.
+      </p>
+      {% if profile and profile.cgpa %}
+      <a href="/student/resume/generate" class="btn btn-primary" style="font-size:1rem; padding:0.75rem 2rem;">
+        ⚡ Generate & Download PDF
+      </a>
+      {% else %}
+      <a href="/student/profile" class="btn btn-ghost" style="font-size:1rem; padding:0.75rem 2rem;">
+        Complete Profile First →
+      </a>
+      {% endif %}
+    </div>
+
+    <div class="card" style="margin-top:1rem;">
+      <div class="card-title">📝 What's Included in the PDF</div>
+      <ul style="list-style:none; font-size:0.88rem; line-height:2.1;">
+        <li>✅ College branding header</li>
+        <li>✅ Your name, contact, branch</li>
+        <li>✅ Academic details (CGPA, backlogs)</li>
+        <li>✅ Technical skills list</li>
+        <li>✅ All your projects with descriptions</li>
+        <li>✅ Certificates section</li>
+        <li>✅ Declaration & signature section</li>
+      </ul>
+    </div>
+
+    <div class="card" style="margin-top:1rem; background:#f0fdf4; border-color:#86efac;">
+      <div style="font-size:0.82rem; color:var(--green); line-height:1.6;">
+        <strong>💡 Tip:</strong> Update your profile anytime and regenerate to get a fresh PDF. Each generation reflects your latest skills and projects.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_script %}
+<script>
+async function loadQuality() {
+  try {
+    const res = await fetch('/api/resume-quality');
+    const data = await res.json();
+    const score = data.score || 0;
+    document.getElementById('qualityScore').textContent = score + '%';
+    const arc = document.getElementById('qualityArc');
+    const circumference = 314;
+    const offset = circumference - (score / 100) * circumference;
+    arc.style.strokeDashoffset = offset;
+    arc.style.stroke = score >= 80 ? 'var(--green)' : score >= 50 ? 'var(--amber)' : 'var(--red)';
+    const label = document.getElementById('qualityLabel');
+    label.textContent = score >= 80 ? '🎉 Excellent resume!' : score >= 50 ? '📈 Good, keep improving' : '⚠️ Needs improvement';
+    label.style.color = score >= 80 ? 'var(--green)' : score >= 50 ? 'var(--amber)' : 'var(--red)';
+    if (data.tips && data.tips.length) {
+      const container = document.getElementById('qualityTips');
+      container.innerHTML = '<div style="font-size:0.78rem; font-weight:700; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem;">💡 To improve your score:</div>' +
+        data.tips.map(t => `<div style="font-size:0.83rem; color:var(--text); background:var(--amber-light); border-radius:6px; padding:0.4rem 0.7rem; margin-bottom:0.35rem;">→ ${t}</div>`).join('');
+    }
+  } catch(e) { console.error(e); }
+}
+loadQuality();
+</script>
+{% endblock %}

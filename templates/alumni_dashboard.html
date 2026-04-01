@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% block title %}Alumni Dashboard – PlacementPro{% endblock %}
+{% block extra_style %}
+<style>
+.req-status { font-size:0.72rem; font-weight:700; padding:0.2rem 0.6rem; border-radius:20px; }
+.req-requested { background:#eff6ff; color:#1d4ed8; }
+.req-approved { background:#f0fdf4; color:#15803d; }
+.req-referred { background:#f5f3ff; color:#7c3aed; }
+.req-rejected { background:#fef2f2; color:#dc2626; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🎓 Alumni Dashboard</h1>
+  <p>Give back to your juniors — post referrals, offer mentorship, and stay connected.</p>
+</div>
+
+{% if not ap or not ap.company %}
+<div class="card" style="border-left:4px solid var(--amber); background:var(--amber-light); margin-bottom:1.5rem;">
+  <strong>⚠ Complete your alumni profile</strong> so students can find and reach you.
+  <a href="/alumni/profile" class="btn btn-primary btn-sm" style="margin-left:1rem;">Complete Profile →</a>
+</div>
+{% endif %}
+
+<div class="stats-row" style="grid-template-columns:repeat(4,1fr);">
+  <div class="stat-card"><div class="num">{{ my_referral_posts|length }}</div><div class="label">Referral Posts</div></div>
+  <div class="stat-card"><div class="num" style="color:var(--blue);">{{ referral_reqs|length }}</div><div class="label">Referral Requests</div></div>
+  <div class="stat-card"><div class="num">{{ my_slots|length }}</div><div class="label">Mentorship Slots</div></div>
+  <div class="stat-card" style="border-top:3px solid var(--green);">
+    <div class="num" style="color:var(--green);">{{ my_slots|selectattr('status','equalto','booked')|list|length }}</div>
+    <div class="label">Slots Booked</div>
+  </div>
+</div>
+
+<div style="display:flex; gap:0.75rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+  <a href="/alumni/profile" class="btn btn-ghost">✏️ Edit Profile</a>
+  <a href="/alumni/referral/post" class="btn btn-primary">+ Post Referral</a>
+  <a href="/alumni/slot/add" class="btn btn-success">+ Add Slot</a>
+  <a href="/connect" class="btn btn-ghost">🌐 View Connect Board</a>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start;">
+
+  <!-- MY REFERRAL POSTS -->
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <div class="card-title" style="margin-bottom:0;">🤝 My Referral Posts</div>
+      <a href="/alumni/referral/post" class="btn btn-primary btn-sm">+ New Post</a>
+    </div>
+    {% if my_referral_posts %}
+      {% for p in my_referral_posts %}
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.9rem; margin-bottom:0.75rem; border-left:3px solid var(--blue);">
+        <div style="display:flex; justify-content:space-between; align-items:start;">
+          <div style="font-weight:700; font-family:'Syne',sans-serif;">{{ p.company }} — {{ p.role }}</div>
+          {% if p.job_type %}<span class="badge badge-gray" style="font-size:0.65rem;">{{ p.job_type }}</span>{% endif %}
+        </div>
+        {% if p.package_lpa and p.package_lpa > 0 %}<div style="font-size:0.78rem; color:var(--green); font-weight:600; margin-top:0.2rem;">₹{{ p.package_lpa }} LPA {% if p.location %}· 📍 {{ p.location }}{% endif %}</div>{% endif %}
+        <div style="font-size:0.8rem; color:var(--muted); margin-top:0.2rem;">{{ p.description[:70] }}{% if p.description|length > 70 %}...{% endif %}</div>
+        {% if p.deadline %}<div style="font-size:0.72rem; color:var(--red); margin-top:0.3rem; font-weight:600;">🕐 Deadline: {{ p.deadline }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="text-align:center; color:var(--muted); padding:2rem;">
+        <div style="font-size:2.5rem; margin-bottom:0.5rem;">📋</div>
+        <p>No referral posts yet. Help your juniors get hired!</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- MY MENTORSHIP SLOTS -->
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <div class="card-title" style="margin-bottom:0;">📅 My Mentorship Slots</div>
+      <a href="/alumni/slot/add" class="btn btn-success btn-sm">+ Add Slot</a>
+    </div>
+    {% if my_slots %}
+      {% for s in my_slots %}
+      <div style="border:1px solid var(--border); border-radius:10px; padding:0.9rem; margin-bottom:0.6rem;">
+        <div style="font-weight:700;">{{ s.topic }}</div>
+        <div style="font-size:0.8rem; color:var(--muted);">📅 {{ s.slot_date }} · ⏰ {{ s.slot_time }}</div>
+        <span class="badge {% if s.status == 'booked' %}badge-amber{% else %}badge-green{% endif %}" style="margin-top:0.35rem;">
+          {{ 'BOOKED' if s.status == 'booked' else 'AVAILABLE' }}
+        </span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="text-align:center; color:var(--muted); padding:2rem;">
+        <div style="font-size:2.5rem; margin-bottom:0.5rem;">📅</div>
+        <p>No mentorship slots yet.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- REFERRAL REQUESTS (full width) -->
+  {% if referral_reqs %}
+  <div class="card" style="grid-column:span 2; border-top:3px solid var(--blue);">
+    <div class="card-title">📩 Referral Requests</div>
+    <table>
+      <thead><tr><th>Student</th><th>Branch / CGPA</th><th>For Role</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for r in referral_reqs %}
+        <tr>
+          <td>
+            <div style="font-weight:600;">{{ r.student_name }}</div>
+            <div style="font-size:0.75rem;color:var(--muted);">{{ r.student_email }}</div>
+          </td>
+          <td>{{ r.branch }} · CGPA {{ r.cgpa }}</td>
+          <td><strong>{{ r.ref_company }}</strong> — {{ r.ref_role }}</td>
+          <td>
+            <span class="req-status req-{{ r.status }}">
+              {% if r.status=='requested' %}🔵 Requested
+              {% elif r.status=='approved' %}🟢 Approved
+              {% elif r.status=='referred' %}🟣 Referred
+              {% elif r.status=='rejected' %}🔴 Rejected{% endif %}
+            </span>
+            {% if r.alumni_note %}<div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">Note: {{ r.alumni_note }}</div>{% endif %}
+          </td>
+          <td>
+            {% if r.status == 'requested' %}
+            <form method="POST" action="/alumni/referral-request/{{ r.id }}/respond">
+              <div style="display:flex;flex-direction:column;gap:0.4rem;">
+                <input type="text" name="note" placeholder="Add note (optional)" style="font-size:0.78rem;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:6px;">
+                <div style="display:flex;gap:0.3rem;">
+                  <button name="action" value="approved" class="btn btn-success btn-sm">✅ Approve</button>
+                  <button name="action" value="referred" class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1px solid #c4b5fd;">🟣 Refer</button>
+                  <button name="action" value="rejected" class="btn btn-sm" style="background:#fef2f2;color:var(--red);border:1px solid #fca5a5;">✗ Reject</button>
+                </div>
+              </div>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- MENTORSHIP REQUESTS -->
+  {% if mentor_reqs %}
+  <div class="card" style="grid-column:span 2;">
+    <div class="card-title">🤝 Mentorship Requests</div>
+    <table>
+      <thead><tr><th>Student</th><th>Branch</th><th>CGPA</th><th>Message</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for r in mentor_reqs %}
+        <tr>
+          <td><div style="font-weight:600;">{{ r.student_name }}</div><div style="font-size:0.75rem;color:var(--muted);">{{ r.student_email }}</div></td>
+          <td>{{ r.branch }}</td>
+          <td>{{ r.cgpa }}</td>
+          <td style="font-size:0.82rem;max-width:180px;">{{ r.message[:55] }}{% if r.message|length > 55 %}...{% endif %}</td>
+          <td>
+            {% if r.status=='accepted' %}<span class="badge badge-green">Accepted</span>
+            {% elif r.status=='rejected' %}<span class="badge badge-red">Rejected</span>
+            {% else %}<span class="badge badge-amber">Pending</span>{% endif %}
+          </td>
+          <td>
+            {% if r.status=='pending' %}
+            <form method="POST" action="/alumni/mentorship/{{ r.id }}/respond" style="display:flex;gap:0.4rem;">
+              <button name="action" value="accepted" class="btn btn-success btn-sm">Accept</button>
+              <button name="action" value="rejected" class="btn btn-sm" style="background:#fef2f2;color:var(--red);border:1px solid #fca5a5;">Decline</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

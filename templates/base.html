@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}PlacementPro{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0;
+    --dark: #0f172a; --blue: #2563eb; --blue-light: #eff6ff;
+    --green: #16a34a; --green-light: #f0fdf4;
+    --amber: #d97706; --amber-light: #fffbeb;
+    --red: #dc2626; --red-light: #fef2f2;
+    --muted: #64748b; --text: #1e293b;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* NAV */
+  nav.topnav {
+    background: var(--dark); color: white;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; height: 58px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .nav-brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem; letter-spacing: -0.5px; color: white; }
+  .nav-brand span { color: #60a5fa; }
+  .nav-links { display: flex; gap: 0.25rem; align-items: center; }
+  .nav-links a {
+    color: #94a3b8; padding: 0.4rem 0.8rem; border-radius: 6px;
+    font-size: 0.85rem; font-weight: 500; transition: all 0.15s;
+  }
+  .nav-links a:hover, .nav-links a.active { color: white; background: rgba(255,255,255,0.1); text-decoration: none; }
+  .nav-user { display: flex; align-items: center; gap: 0.75rem; }
+  .nav-user .role-badge {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    padding: 0.2rem 0.55rem; border-radius: 20px; letter-spacing: 0.05em;
+  }
+  .role-badge.tpo { background: #fbbf24; color: #78350f; }
+  .role-badge.student { background: #34d399; color: #064e3b; }
+  .nav-user .name { font-size: 0.85rem; color: #e2e8f0; font-weight: 500; }
+  .btn-logout { font-size: 0.8rem; color: #94a3b8 !important; }
+
+  /* LAYOUT */
+  .page-wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .page-header { margin-bottom: 1.75rem; }
+  .page-header h1 { font-family: 'Syne', sans-serif; font-size: 1.75rem; font-weight: 800; color: var(--dark); }
+  .page-header p { color: var(--muted); margin-top: 0.25rem; font-size: 0.92rem; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow); }
+  .card-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: var(--dark); margin-bottom: 1rem; }
+
+  /* STAT CARDS */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.25rem; text-align: center; box-shadow: var(--shadow);
+  }
+  .stat-card .num { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; color: var(--blue); }
+  .stat-card .label { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 1.1rem; border-radius: 8px; font-size: 0.875rem;
+    font-weight: 600; cursor: pointer; border: none; transition: all 0.15s;
+    font-family: 'Inter', sans-serif; text-decoration: none;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: #1d4ed8; color: white; }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #15803d; color: white; }
+  .btn-ghost { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--border); color: var(--text); }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-sm { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
+
+  /* FORMS */
+  .form-group { margin-bottom: 1.1rem; }
+  .form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 0.35rem; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 0.6rem 0.9rem; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 0.9rem; font-family: 'Inter', sans-serif;
+    background: white; color: var(--text); transition: border-color 0.15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.25rem; }
+
+  /* BADGES & STATUS */
+  .badge {
+    display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px;
+    font-size: 0.73rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-gray { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+  /* STATUS PIPELINE */
+  .status-pipeline { display: flex; gap: 0; align-items: center; flex-wrap: wrap; margin: 0.5rem 0; }
+  .status-step {
+    padding: 0.25rem 0.8rem; font-size: 0.75rem; font-weight: 600;
+    background: var(--bg); border: 1px solid var(--border); color: var(--muted);
+  }
+  .status-step:first-child { border-radius: 20px 0 0 20px; }
+  .status-step:last-child { border-radius: 0 20px 20px 0; }
+  .status-step.active-status { background: var(--blue); color: white; border-color: var(--blue); }
+  .status-step.done-status { background: var(--green-light); color: var(--green); border-color: var(--green); }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  th { background: var(--bg); font-weight: 600; color: var(--muted); font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 0.05em; padding: 0.6rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg); }
+
+  /* ALERTS */
+  .flash-messages { margin-bottom: 1rem; }
+  .flash { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem; }
+  .flash.success { background: var(--green-light); color: var(--green); border: 1px solid #86efac; }
+  .flash.error { background: var(--red-light); color: var(--red); border: 1px solid #fca5a5; }
+
+  /* NOTIF BELL */
+  .notif-panel { position: relative; }
+  .notif-btn { background: rgba(255,255,255,0.1); border: none; color: white; cursor: pointer;
+    padding: 0.4rem 0.7rem; border-radius: 8px; font-size: 1rem; position: relative; }
+  .notif-count { position: absolute; top: -4px; right: -4px; background: #ef4444;
+    color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 0.6rem;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; }
+  .notif-dropdown {
+    display: none; position: absolute; right: 0; top: calc(100% + 8px);
+    background: white; border: 1px solid var(--border); border-radius: 12px;
+    width: 320px; box-shadow: var(--shadow-md); z-index: 200; overflow: hidden;
+  }
+  .notif-dropdown.open { display: block; }
+  .notif-header { padding: 0.75rem 1rem; font-weight: 700; font-size: 0.85rem; border-bottom: 1px solid var(--border); color: var(--dark); }
+  .notif-item { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.83rem; cursor: pointer; color: var(--text); }
+  .notif-item:hover { background: var(--bg); }
+  .notif-item.unread { background: #dbeafe; color: #1e3a8a; font-weight: 600; border-left: 3px solid var(--blue); }
+  .notif-item .time { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; }
+  .notif-empty { padding: 1.5rem; text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+  /* PROGRESS BAR */
+  .progress-bar-wrap { background: var(--bg); border-radius: 20px; height: 10px; overflow: hidden; border: 1px solid var(--border); }
+  .progress-bar { height: 100%; background: var(--blue); border-radius: 20px; transition: width 0.5s; }
+  .progress-bar.green { background: var(--green); }
+  .progress-bar.amber { background: var(--amber); }
+  .progress-bar.red { background: var(--red); }
+
+  /* DRIVE CARDS */
+  .drive-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+  .drive-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; box-shadow: var(--shadow); transition: box-shadow 0.2s, transform 0.2s; }
+  .drive-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .drive-card .company { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 800; color: var(--dark); }
+  .drive-card .role-tag { color: var(--muted); font-size: 0.85rem; margin-top: 0.15rem; }
+  .drive-card .criteria { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.75rem 0; }
+
+  @media (max-width: 640px) {
+    .form-row { grid-template-columns: 1fr; }
+    .page-wrap { padding: 1rem; }
+    nav.topnav { padding: 0 1rem; }
+  }
+</style>
+{% block extra_style %}{% endblock %}
+</head>
+<body>
+
+{% if session.user_id %}
+<nav class="topnav">
+  <a href="/dashboard" class="nav-brand">Placement<span>Pro</span></a>
+  <div class="nav-links">
+    {% if session.role == 'tpo' %}
+      <a href="/tpo">Dashboard</a>
+      <a href="/tpo/drive/create">+ Drive</a>
+      <a href="/tpo/stats">Analytics</a>
+    {% elif session.role == "alumni" %}
+      <a href="/alumni">Dashboard</a>
+      <a href="/alumni/profile">My Profile</a>
+      <a href="/alumni/referral/post">+ Referral</a>
+      <a href="/alumni/slot/add">+ Slot</a>
+      <a href="/connect">🌐 Connect</a>
+    {% else %}
+      <a href="/student">Dashboard</a>
+      <a href="/student/profile">Profile</a>
+      <a href="/student/resume">Resume</a>
+      <a href="/student/skill-gap">Skill Gap</a>
+      <a href="/student/chatbot">🤖 Bot</a>
+      <a href="/connect">🌐 Connect</a>
+    {% endif %}
+  </div>
+  <div class="nav-user">
+    {% set unread = notifs|selectattr('is_read','equalto',0)|list|length if notifs is defined else 0 %}
+    <div class="notif-panel">
+      <button class="notif-btn" onclick="toggleNotif()" id="notifBtn">
+        🔔
+        {% if unread > 0 %}<span class="notif-count">{{ unread }}</span>{% endif %}
+      </button>
+      <div class="notif-dropdown" id="notifDropdown">
+        <div class="notif-header">Notifications</div>
+        {% if notifs %}
+          {% for n in notifs[:8] %}
+          <div class="notif-item {% if not n.is_read %}unread{% endif %}" onclick="markRead({{ n.id }}, this)">
+            {{ n.message }}
+            <div class="time">{{ n.created_at }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="notif-empty">No notifications yet</div>
+        {% endif %}
+      </div>
+    </div>
+    <span class="role-badge {{ session.role }}">{{ session.role }}</span>
+    <span class="name">{{ session.name }}</span>
+    <a href="/logout" class="btn btn-ghost btn-sm btn-logout">Logout</a>
+  </div>
+</nav>
+{% endif %}
+
+<div class="page-wrap">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-messages">
+    {% for cat, msg in messages %}
+    <div class="flash {{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+<script>
+function toggleNotif() {
+  document.getElementById('notifDropdown').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  const btn = document.getElementById('notifBtn');
+  const dd = document.getElementById('notifDropdown');
+  if (dd && btn && !btn.contains(e.target) && !dd.contains(e.target)) {
+    dd.classList.remove('open');
+  }
+});
+async function markRead(id, el) {
+  el.classList.remove('unread');
+  await fetch(`/api/notifications/read/${id}`, {method:'POST'});
+}
+</script>
+{% block extra_script %}{% endblock %}
+</body>
+</html>

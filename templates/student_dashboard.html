@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Student Dashboard – PlacementPro{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>👋 Hello, {{ session.name }}</h1>
+  <p>Your personalized placement command center.</p>
+</div>
+
+{% if not profile or not profile.branch %}
+<div class="card" style="border-left:4px solid var(--amber); background:var(--amber-light); margin-bottom:1.5rem;">
+  <strong>⚠ Complete your profile</strong> to see eligible drives and generate your resume.
+  <a href="/student/profile" class="btn btn-primary btn-sm" style="margin-left:1rem;">Complete Profile →</a>
+</div>
+{% endif %}
+
+<div class="stats-row">
+  <div class="stat-card"><div class="num">{{ profile.cgpa if profile else '—' }}</div><div class="label">My CGPA</div></div>
+  <div class="stat-card"><div class="num">{{ profile.backlogs if profile else '—' }}</div><div class="label">Backlogs</div></div>
+  <div class="stat-card"><div class="num">{{ eligible_drives|length }}</div><div class="label">Eligible Drives</div></div>
+  <div class="stat-card"><div class="num">{{ applications|length }}</div><div class="label">Applications</div></div>
+</div>
+
+<div style="display:flex; gap:0.75rem; margin-bottom:1.75rem; flex-wrap:wrap;">
+  <a href="/student/profile" class="btn btn-ghost">✏️ Edit Profile</a>
+  <a href="/student/resume" class="btn btn-primary">📄 Resume Wizard</a>
+  <a href="/student/skill-gap" class="btn btn-ghost">📊 Skill Gap</a>
+  <a href="/student/chatbot" class="btn btn-ghost">🤖 PlacementBot</a>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start;">
+  <!-- ELIGIBLE DRIVES -->
+  <div>
+    <h2 style="font-family:'Syne',sans-serif; font-size:1.05rem; font-weight:700; margin-bottom:0.75rem;">
+      🎯 Drives You're Eligible For
+      {% if eligible_drives %}<span style="font-size:0.78rem; font-weight:500; color:var(--muted); margin-left:0.5rem;">sorted by best match</span>{% endif %}
+    </h2>
+    {% if eligible_drives %}
+      {% for d in eligible_drives %}
+      {% set applied = applications|selectattr('drive_id','equalto',d.id)|list %}
+      <div class="drive-card" style="margin-bottom:0.75rem; {% if applied %}border-left:3px solid var(--green);{% endif %}">
+        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:0.35rem;">
+          <div>
+            <div class="company">{{ d.company }}</div>
+            <div class="role-tag">{{ d.role }}</div>
+          </div>
+          {% if applied %}<span class="badge badge-green">✓ Applied</span>{% endif %}
+        </div>
+        <div class="criteria">
+          <span class="badge badge-blue">CGPA ≥ {{ d.min_cgpa }}</span>
+          <span class="badge badge-gray">≤ {{ d.max_backlogs }} Backlogs</span>
+          {% if d.deadline %}<span class="badge badge-amber">Due {{ d.deadline }}</span>{% endif %}
+        </div>
+        <!-- WHY I'M ELIGIBLE -->
+        {% if profile %}
+        <div style="background:var(--green-light); border-radius:7px; padding:0.4rem 0.75rem; margin-bottom:0.65rem; font-size:0.78rem; color:var(--green); font-weight:500;">
+          ✅ Eligible because: CGPA {{ profile.cgpa }} ≥ {{ d.min_cgpa }}, backlogs {{ profile.backlogs }}/{{ d.max_backlogs }}, Branch {{ profile.branch }} allowed
+        </div>
+        {% endif %}
+        <p style="font-size:0.82rem; color:var(--muted); margin-bottom:0.75rem;">{{ d.description[:90] }}{% if d.description|length > 90 %}...{% endif %}</p>
+        {% if not applied %}
+        <form method="POST" action="/student/apply/{{ d.id }}">
+          <button type="submit" class="btn btn-success btn-sm">Apply Now</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="card" style="text-align:center; padding:2rem; color:var(--muted);">
+        <div style="font-size:2.5rem; margin-bottom:0.75rem;">🔍</div>
+        Complete your profile to see matching drives.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- APPLICATION TRACKER -->
+  <div>
+    <h2 style="font-family:'Syne',sans-serif; font-size:1.05rem; font-weight:700; margin-bottom:0.75rem;">📋 Application Tracker</h2>
+    {% if applications %}
+      {% for app in applications %}
+      <div class="card" style="margin-bottom:0.75rem; {% if app.drive_status == 'completed' %}opacity:0.8;{% endif %}">
+        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:0.75rem;">
+          <div>
+            <div style="font-weight:700; font-family:'Syne',sans-serif;">{{ app.company }}</div>
+            <div style="font-size:0.82rem; color:var(--muted);">{{ app.role }}</div>
+          </div>
+          <div style="text-align:right;">
+            {% if app.status == 'selected' %}<span class="badge badge-green" style="font-size:0.78rem;">🎉 Selected!</span>
+            {% elif app.status == 'rejected' %}<span class="badge badge-red" style="font-size:0.78rem;">❌ Not Selected</span>
+            {% elif app.status == 'hr' %}<span class="badge" style="background:#ecfeff;color:#0891b2;font-size:0.78rem;">🤝 HR Round</span>
+            {% elif app.status == 'technical' %}<span class="badge" style="background:#f5f3ff;color:#7c3aed;font-size:0.78rem;">💻 Technical</span>
+            {% elif app.status == 'interview_scheduled' %}<span class="badge badge-blue" style="font-size:0.78rem;">📅 Interview</span>
+            {% elif app.status == 'aptitude' %}<span class="badge badge-amber" style="font-size:0.78rem;">📝 Aptitude</span>
+            {% else %}<span class="badge badge-gray" style="font-size:0.78rem;">🔵 Applied</span>{% endif %}
+            {% if app.drive_status == 'completed' %}
+            <div style="font-size:0.7rem; color:var(--muted); margin-top:0.2rem;">Drive Closed</div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Round Progress Pipeline -->
+        <div style="display:flex; gap:2px; margin-bottom:0.5rem; align-items:center;">
+          {% set pipeline = [('applied','Applied','#2563eb'),('aptitude','Aptitude','#d97706'),('technical','Technical','#7c3aed'),('hr','HR','#0891b2'),('selected','Selected','#16a34a')] %}
+          {% set order_map = {'applied':0,'aptitude':1,'technical':2,'hr':3,'interview_scheduled':3,'selected':4,'rejected':-1} %}
+          {% set cur = order_map.get(app.status, 0) %}
+          {% for val, label, color in pipeline %}
+            {% set idx = loop.index0 %}
+            {% if app.status == 'rejected' %}
+              <div style="flex:1;height:5px;border-radius:3px;background:{% if idx == 0 %}#dc2626{% else %}#e2e8f0{% endif %};"></div>
+            {% elif idx <= cur %}
+              <div style="flex:1;height:5px;border-radius:3px;background:{{ color }};"></div>
+            {% else %}
+              <div style="flex:1;height:5px;border-radius:3px;background:#e2e8f0;"></div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+          {% set pipeline2 = [('applied','Applied'),('aptitude','Aptitude'),('technical','Technical'),('hr','HR'),('selected','Selected')] %}
+          {% set order_map2 = {'applied':0,'aptitude':1,'technical':2,'hr':3,'interview_scheduled':3,'selected':4,'rejected':-1} %}
+          {% set cur2 = order_map2.get(app.status, 0) %}
+          {% for val, label in pipeline2 %}
+            {% set idx = loop.index0 %}
+            <div style="font-size:0.6rem;font-weight:{% if idx == cur2 %}700{% else %}500{% endif %};color:{% if idx == cur2 %}var(--blue){% elif idx < cur2 %}var(--muted){% else %}#cbd5e1{% endif %};text-align:center;flex:1;">{{ label }}</div>
+          {% endfor %}
+        </div>
+        <div style="font-size:0.72rem; color:var(--muted); margin-top:0.4rem;">Applied: {{ app.applied_at[:10] if app.applied_at else '' }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="card" style="text-align:center; padding:2rem; color:var(--muted);">
+        <div style="font-size:2.5rem; margin-bottom:0.75rem;">📬</div>
+        No applications yet. Apply to eligible drives!
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

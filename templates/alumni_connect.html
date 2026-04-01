@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}Alumni Connect – PlacementPro{% endblock %}
+{% block extra_style %}
+<style>
+.alumni-card { background:white; border:1px solid var(--border); border-radius:14px; padding:1.25rem; box-shadow:var(--shadow); transition:all 0.2s; }
+.alumni-card:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+.avatar { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#1d4ed8,#7c3aed); display:flex; align-items:center; justify-content:center; color:white; font-weight:800; font-size:1.1rem; flex-shrink:0; }
+.job-card { background:white; border:1px solid var(--border); border-radius:12px; padding:1.1rem; border-left:4px solid var(--blue); box-shadow:var(--shadow); }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="/student" style="color:var(--muted);font-size:0.85rem;">← Dashboard</a>
+  <h1>🎓 Alumni Connect Portal</h1>
+  <p>Get referrals, book mentors, and grow your network with college alumni at top companies.</p>
+</div>
+
+<!-- TABS -->
+<div style="display:flex; gap:0.5rem; margin-bottom:1.75rem; border-bottom:2px solid var(--border); padding-bottom:0;">
+  <button onclick="showTab('jobs')" id="tab-jobs" class="tab-btn active-tab">💼 Job Referral Board ({{ jobs|length }})</button>
+  <button onclick="showTab('mentors')" id="tab-mentors" class="tab-btn">🤝 Mentors ({{ alumni_list|length }})</button>
+</div>
+
+<!-- JOB REFERRALS TAB -->
+<div id="pane-jobs">
+  {% if jobs %}
+  <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:1rem;">
+    {% for j in jobs %}
+    <div class="job-card">
+      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:0.5rem;">
+        <div>
+          <div style="font-weight:800; font-family:'Syne',sans-serif; font-size:1rem;">{{ j.company }}</div>
+          <div style="font-size:0.85rem; color:var(--muted);">{{ j.role }}</div>
+        </div>
+        <span class="badge badge-blue">Referral</span>
+      </div>
+      {% if j.location %}<div style="font-size:0.8rem; color:var(--muted); margin-bottom:0.4rem;">📍 {{ j.location }}</div>{% endif %}
+      <p style="font-size:0.83rem; color:var(--text); margin-bottom:0.75rem; line-height:1.5;">{{ j.description[:120] }}{% if j.description|length > 120 %}...{% endif %}</p>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:0.78rem; color:var(--muted);">Referred by: <strong>{{ j.alumni_name }}</strong></div>
+        {% if j.apply_link %}
+        <a href="{{ j.apply_link }}" target="_blank" class="btn btn-primary btn-sm">Apply →</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:3rem;color:var(--muted);">
+    <div style="font-size:3rem;margin-bottom:1rem;">💼</div>
+    No job referrals posted yet. Check back soon!
+  </div>
+  {% endif %}
+</div>
+
+<!-- MENTORS TAB -->
+<div id="pane-mentors" style="display:none;">
+  {% if alumni_list %}
+  <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1rem;">
+    {% for a in alumni_list %}
+    <div class="alumni-card">
+      <div style="display:flex; gap:0.9rem; align-items:start; margin-bottom:0.75rem;">
+        <div class="avatar">{{ a.name[0] }}</div>
+        <div>
+          <div style="font-weight:800; font-family:'Syne',sans-serif;">{{ a.name }}</div>
+          <div style="font-size:0.82rem; color:var(--blue); font-weight:600;">{{ a.role }} @ {{ a.company }}</div>
+          <div style="font-size:0.75rem; color:var(--muted);">{{ a.branch }} · Batch {{ a.batch_year }}</div>
+        </div>
+      </div>
+      {% if a.bio %}
+      <p style="font-size:0.82rem; color:var(--text); line-height:1.5; margin-bottom:0.75rem; background:var(--bg); padding:0.6rem 0.75rem; border-radius:8px;">{{ a.bio[:120] }}{% if a.bio|length > 120 %}...{% endif %}</p>
+      {% endif %}
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        {% if a.linkedin %}<a href="{{ a.linkedin }}" target="_blank" class="btn btn-ghost btn-sm">🔗 LinkedIn</a>{% endif %}
+        {% set req_status = my_req_map.get(a.id) %}
+        {% if not a.open_to_mentor %}
+          <span class="badge badge-gray">Not taking requests</span>
+        {% elif req_status == 'accepted' %}
+          <span class="badge badge-green">✅ Connected</span>
+        {% elif req_status == 'pending' %}
+          <span class="badge badge-amber">⏳ Pending</span>
+        {% elif req_status == 'rejected' %}
+          <span class="badge badge-red">Not accepted</span>
+        {% else %}
+          <button onclick="openModal({{ a.id }}, '{{ a.name }}')" class="btn btn-primary btn-sm">Request Mentorship</button>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:3rem;color:var(--muted);">
+    <div style="font-size:3rem;margin-bottom:1rem;">🤝</div>
+    No alumni registered yet.
+  </div>
+  {% endif %}
+</div>
+
+<!-- MENTORSHIP REQUEST MODAL -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:16px;padding:2rem;width:440px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:800;margin-bottom:0.5rem;" id="modal-title">Request Mentorship</h3>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">Write a brief message about what you're looking for.</p>
+    <form method="POST" id="modal-form">
+      <div class="form-group">
+        <label>Your message</label>
+        <textarea name="message" rows="4" style="width:100%;padding:0.6rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:inherit;" placeholder="Hi! I'm in final year CS and preparing for SDE interviews. Would love your guidance on DSA and system design…"></textarea>
+      </div>
+      <div style="display:flex;gap:0.75rem;">
+        <button type="submit" class="btn btn-primary" style="flex:1;">Send Request</button>
+        <button type="button" onclick="closeModal()" class="btn btn-ghost">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_style %}{{ super() }}
+<style>
+.tab-btn { padding:0.5rem 1.25rem; border:none; background:none; cursor:pointer; font-size:0.875rem; font-weight:600; color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-2px; font-family:'Inter',sans-serif; }
+.active-tab { color:var(--blue); border-bottom-color:var(--blue); }
+</style>
+{% endblock %}
+{% block extra_script %}
+<script>
+function showTab(t) {
+  document.getElementById('pane-jobs').style.display = t==='jobs' ? '' : 'none';
+  document.getElementById('pane-mentors').style.display = t==='mentors' ? '' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+  document.getElementById('tab-'+t).classList.add('active-tab');
+}
+function openModal(id, name) {
+  document.getElementById('modal-title').textContent = `Request Mentorship from ${name}`;
+  document.getElementById('modal-form').action = `/alumni-connect/request/${id}`;
+  document.getElementById('modal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+</script>
+{% endblock %}

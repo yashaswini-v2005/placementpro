@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Add Mentorship Slot – PlacementPro{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="/alumni" style="color:var(--muted);font-size:0.85rem;">← Dashboard</a>
+  <h1>📅 Add Mentorship Slot</h1>
+  <p>Set your availability — students can book a 1:1 session for mock interviews or career guidance.</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 340px; gap:1.5rem; align-items:start; max-width:900px;">
+  <div class="card">
+    <form method="POST" action="/alumni/slot/add">
+      <div class="form-group">
+        <label>Session Topic</label>
+        <select name="topic" required>
+          <option value="">Select a topic…</option>
+          <option>Mock Interview – Technical</option>
+          <option>Mock Interview – HR</option>
+          <option>Resume Review</option>
+          <option>Career Guidance (Data Science)</option>
+          <option>Career Guidance (Software Engineering)</option>
+          <option>System Design Discussion</option>
+          <option>DSA Practice Session</option>
+          <option>General Mentorship</option>
+        </select>
+        <div class="form-hint">What kind of session are you offering?</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" name="slot_date" required>
+        </div>
+        <div class="form-group">
+          <label>Time</label>
+          <input type="time" name="slot_time" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Meeting Link (Google Meet / Zoom)</label>
+        <input type="url" name="meet_link" placeholder="https://meet.google.com/xxx-yyyy-zzz">
+        <div class="form-hint">Shared with the student only after they book the slot.</div>
+      </div>
+      <button type="submit" class="btn btn-success" style="width:100%; padding:0.75rem; font-size:1rem;">
+        ✅ Add Mentorship Slot
+      </button>
+    </form>
+  </div>
+
+  <div>
+    <div class="card" style="border:2px solid var(--blue); margin-bottom:1rem;">
+      <div style="font-weight:800; font-family:'Syne',sans-serif; margin-bottom:0.75rem;">💡 Slot Guidelines</div>
+      <ul style="list-style:none; display:flex; flex-direction:column; gap:0.5rem; font-size:0.85rem; color:var(--muted);">
+        <li>⏱ Keep sessions 30–60 minutes</li>
+        <li>📅 Add slots at least 2 days ahead</li>
+        <li>🔗 Test your meeting link before sharing</li>
+        <li>🔔 You'll get a notification when booked</li>
+        <li>🗑 Unbooked slots can be deleted anytime</li>
+      </ul>
+    </div>
+    <div class="card" style="background:#f0fdf4; border-color:#86efac;">
+      <p style="font-size:0.85rem; color:var(--green); line-height:1.5;">
+        🎓 <strong>Impact:</strong> Even one mock interview can transform a student's confidence and interview performance.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

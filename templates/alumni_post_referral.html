@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Post Referral – PlacementPro{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="/alumni" style="color:var(--muted);font-size:0.85rem;">← Dashboard</a>
+  <h1>🤝 Post a Job Referral</h1>
+  <p>Share an opening from your company — eligible juniors can request referrals directly.</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 320px; gap:1.5rem; align-items:start; max-width:900px;">
+  <div class="card">
+    <form method="POST" action="/alumni/referral/post">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Company Name</label>
+          <input name="company" value="{{ ap.company if ap else '' }}" required placeholder="Your current company">
+        </div>
+        <div class="form-group">
+          <label>Role / Position</label>
+          <input name="role" required placeholder="e.g. Software Engineer – Backend">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>💰 Package (₹ LPA)</label>
+          <input type="number" name="package_lpa" step="0.1" min="0" placeholder="e.g. 12.5">
+        </div>
+        <div class="form-group">
+          <label>🏷 Job Type</label>
+          <select name="job_type" style="padding:0.55rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-size:0.875rem;width:100%;">
+            <option>Full-Time</option>
+            <option>Internship</option>
+            <option>PPO</option>
+            <option>Contract</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>📍 Location</label>
+        <input name="location" placeholder="e.g. Bangalore / Hybrid / Remote">
+      </div>
+      <div class="form-group">
+        <label>Job Description Link</label>
+        <input type="url" name="jd_link" placeholder="https://careers.company.com/job/123">
+        <div class="form-hint">Optional — paste the JD link so students can read full requirements.</div>
+      </div>
+      <div class="form-group">
+        <label>Description / What to Expect</label>
+        <textarea name="description" rows="4" style="width:100%;padding:0.6rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-size:0.875rem;font-family:inherit;" placeholder="Brief about the role, team, tech stack, what you look for in candidates..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Referral Deadline</label>
+        <input type="date" name="deadline">
+        <div class="form-hint">Optional — date after which you can no longer refer.</div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; padding:0.75rem; font-size:1rem;">
+        📢 Publish Referral Post
+      </button>
+    </form>
+  </div>
+
+  <div>
+    <div class="card" style="border:2px solid var(--green); margin-bottom:1rem;">
+      <div style="font-weight:800; font-family:'Syne',sans-serif; color:var(--green); margin-bottom:0.75rem;">How it works</div>
+      <ol style="font-size:0.85rem; color:var(--muted); padding-left:1.2rem; display:flex; flex-direction:column; gap:0.4rem;">
+        <li>You post the opening here</li>
+        <li>Students see it on the Connect Board</li>
+        <li>Interested juniors send a referral request</li>
+        <li>You review + approve or decline</li>
+        <li>Student gets notified of your decision</li>
+      </ol>
+    </div>
+    <div class="card" style="background:#fffbeb; border-color:#fde68a;">
+      <p style="font-size:0.85rem; color:var(--amber); line-height:1.5;">
+        💡 <strong>Tip:</strong> Include the tech stack and minimum CGPA you'd recommend. It helps students self-filter before requesting, saving you time.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Create Drive – PlacementPro{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="/tpo" style="color:var(--muted);font-size:0.85rem;">← Dashboard</a>
+  <h1>🎯 Create Placement Drive</h1>
+  <p>Set eligibility criteria — the system will instantly filter and notify matching students.</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 340px; gap:1.5rem; align-items:start;">
+  <div class="card">
+    <form method="POST" action="/tpo/drive/create" id="driveForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Company Name</label>
+          <input name="company" placeholder="e.g. TCS Digital" required>
+        </div>
+        <div class="form-group">
+          <label>Role / Position</label>
+          <input name="role" placeholder="e.g. Software Engineer" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>💰 Package (CTC in ₹ LPA)</label>
+          <input type="number" name="package_lpa" step="0.1" min="0" placeholder="e.g. 6.5" id="pkgInput">
+        </div>
+        <div class="form-group">
+          <label>🏷 Job Type</label>
+          <select name="job_type">
+            <option>Full-Time</option>
+            <option>Internship</option>
+            <option>PPO</option>
+            <option>Contract</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>📍 Location</label>
+          <input name="location" placeholder="e.g. Bangalore / Remote / Pan India">
+        </div>
+        <div class="form-group">
+          <label>Application Deadline</label>
+          <input type="date" name="deadline">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Minimum CGPA</label>
+          <input type="number" name="min_cgpa" step="0.1" min="0" max="10" value="7.0" id="cgpaInput" oninput="updateCount()">
+        </div>
+        <div class="form-group">
+          <label>Max Allowed Backlogs</label>
+          <input type="number" name="max_backlogs" min="0" max="20" value="0" id="backlogInput" oninput="updateCount()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Allowed Branches</label>
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.25rem;">
+          {% for branch in ['CS','MCA','IT','ECE','EEE','Mech','Civil'] %}
+          <label style="display:flex; align-items:center; gap:0.35rem; font-weight:500; cursor:pointer; padding:0.3rem 0.7rem; border:1px solid var(--border); border-radius:8px; background:white;">
+            <input type="checkbox" name="branches" value="{{ branch }}" onchange="updateCount()"
+              {% if branch in ['CS','MCA','IT'] %}checked{% endif %}
+              style="width:auto; accent-color:var(--blue);">
+            {{ branch }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group">
+        <label>📝 Job Description</label>
+        <textarea name="description" rows="3" placeholder="Brief overview of the role, tech stack, requirements..."></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:0.75rem;font-size:1rem;">🚀 Create Drive & Notify Eligible Students</button>
+    </form>
+  </div>
+
+  <div>
+    <div class="card" style="text-align:center; border-top:3px solid var(--blue); margin-bottom:1rem;">
+      <div style="color:var(--muted); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; font-weight:700; margin-bottom:0.5rem;">Eligible Students</div>
+      <div id="eligibleCount" style="font-family:'Syne',sans-serif; font-size:3.5rem; font-weight:800; color:var(--blue); line-height:1;">—</div>
+      <div style="color:var(--muted); font-size:0.82rem; margin-top:0.3rem;">will be notified automatically</div>
+    </div>
+    <div class="card" style="background:var(--blue-light); border-color:#bfdbfe;">
+      <div style="font-size:0.82rem; color:#1e40af; line-height:1.6;">
+        <strong>🤖 Placement Engine</strong><br>
+        Filters by CGPA, backlogs & branch in real time. All eligible students receive an in-app notification instantly on drive creation.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_script %}
+<script>
+async function updateCount() {
+  const cgpa = parseFloat(document.querySelector('[name=min_cgpa]').value) || 0;
+  const backlogs = parseInt(document.querySelector('[name=max_backlogs]').value) || 0;
+  const branches = [...document.querySelectorAll('[name=branches]:checked')].map(b => b.value);
+  const res = await fetch('/api/eligible-count', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({min_cgpa: cgpa, max_backlogs: backlogs, branches})
+  });
+  const data = await res.json();
+  document.getElementById('eligibleCount').textContent = data.count;
+}
+updateCount();
+</script>
+{% endblock %}

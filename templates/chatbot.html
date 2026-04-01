@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% block title %}PlacementBot – PlacementPro{% endblock %}
+{% block extra_style %}
+<style>
+.chat-container { max-width:700px; margin:0 auto; }
+.chat-window { background:white; border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-md); }
+.chat-header { background:linear-gradient(135deg,#1e3a8a,var(--blue)); color:white; padding:1.25rem 1.5rem; display:flex; align-items:center; gap:0.75rem; }
+.bot-avatar { width:40px; height:40px; background:rgba(255,255,255,0.2); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.3rem; }
+.chat-body { height:440px; overflow-y:auto; padding:1.25rem; display:flex; flex-direction:column; gap:0.75rem; }
+.msg { max-width:82%; }
+.msg-bot { align-self:flex-start; }
+.msg-user { align-self:flex-end; }
+.msg-bubble { padding:0.65rem 1rem; border-radius:14px; font-size:0.88rem; line-height:1.6; }
+.msg-bot .msg-bubble { background:#f1f5f9; color:var(--text); border-bottom-left-radius:4px; }
+.msg-user .msg-bubble { background:var(--blue); color:white; border-bottom-right-radius:4px; }
+.msg-time { font-size:0.68rem; color:var(--muted); margin-top:0.2rem; padding:0 0.25rem; }
+.chat-footer { padding:1rem 1.25rem; border-top:1px solid var(--border); background:#f8fafc; }
+.quick-btns { display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:0.75rem; }
+.qbtn { padding:0.3rem 0.7rem; font-size:0.78rem; border-radius:20px; cursor:pointer; border:1.5px solid var(--blue); color:var(--blue); background:white; font-weight:600; transition:all 0.15s; white-space:nowrap; }
+.qbtn:hover { background:var(--blue); color:white; }
+.chat-input-row { display:flex; gap:0.5rem; }
+.chat-input { flex:1; padding:0.55rem 0.9rem; border:1px solid var(--border); border-radius:20px; font-size:0.875rem; outline:none; font-family:'Inter',sans-serif; }
+.chat-input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+.send-btn { padding:0.55rem 1.1rem; background:var(--blue); color:white; border:none; border-radius:20px; cursor:pointer; font-weight:600; font-size:0.875rem; }
+.send-btn:hover { background:#1d4ed8; }
+.typing-dot { display:inline-block; width:6px; height:6px; background:var(--muted); border-radius:50%; margin:0 2px; animation:bounce 1s infinite; }
+.typing-dot:nth-child(2) { animation-delay:0.2s; }
+.typing-dot:nth-child(3) { animation-delay:0.4s; }
+@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header" style="text-align:center;">
+  <a href="/student" style="color:var(--muted);font-size:0.85rem;">← Dashboard</a>
+  <h1>🤖 PlacementBot</h1>
+  <p>24/7 virtual career assistant — answers from live database.</p>
+</div>
+
+<div class="chat-container">
+  <div class="chat-window">
+    <div class="chat-header">
+      <div class="bot-avatar">🤖</div>
+      <div>
+        <div style="font-weight:700;font-family:'Syne',sans-serif;">PlacementBot</div>
+        <div style="font-size:0.75rem;opacity:0.8;">● Online · Always available</div>
+      </div>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-footer">
+      <div class="quick-btns">
+        <button class="qbtn" onclick="quickAsk('What are the active drives?')">📋 Active Drives</button>
+        <button class="qbtn" onclick="quickAsk('What is the CGPA cutoff?')">🎓 CGPA Cutoff</button>
+        <button class="qbtn" onclick="quickAsk('When is my interview?')">📅 My Interview</button>
+        <button class="qbtn" onclick="quickAsk('Am I eligible for any drives?')">✅ My Eligibility</button>
+        <button class="qbtn" onclick="quickAsk('What documents do I need?')">📁 Documents</button>
+        <button class="qbtn" onclick="quickAsk('Give me interview tips')">💡 Interview Tips</button>
+        <button class="qbtn" onclick="quickAsk('What is the deadline?')">⏰ Deadlines</button>
+        <button class="qbtn" onclick="quickAsk('Show my application status')">📊 My Status</button>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" class="chat-input" id="chatInput" placeholder="Ask anything about placements…" onkeydown="if(event.key==='Enter') sendMsg()">
+        <button class="send-btn" onclick="sendMsg()">Send →</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_script %}
+<script>
+// Live data from database
+const DRIVES = {{ drives_json|safe }};
+const MY_APPS = {{ my_apps_json|safe }};
+const MY_PROFILE = {{ student_profile|tojson|safe }};
+
+function findAnswer(q) {
+  const ql = q.toLowerCase().trim();
+
+  // GREETING
+  if (/^(hi|hello|hey|howdy|hiya)[\s!]*$/.test(ql)) return "Hey there! 👋 I'm <b>PlacementBot</b>. Ask me about active drives, your eligibility, deadlines, interviews, or anything placement-related!";
+  if (ql.includes('help')) return "🆘 <b>I can help you with:</b><br><br>• 📋 Active drives & companies<br>• ✅ Your eligibility for drives<br>• 🎓 CGPA cutoffs per company<br>• ⏰ Application deadlines<br>• 📅 Interview schedule & venue<br>• 📊 Your application status<br>• 📁 Documents to prepare<br>• 💡 Interview preparation tips<br>• 📄 Resume & skill gap<br><br>Just ask or tap a quick button!";
+
+  // ELIGIBILITY (personalised using student profile)
+  if (ql.includes('eligible') || ql.includes('eligibility') || ql.includes('qualify') || ql.includes('can i apply')) {
+    if (!DRIVES.length) return "No active drives right now. You'll be notified when new ones open! 📭";
+    if (!MY_PROFILE.cgpa) return "I couldn't find your profile. Please update your CGPA and branch in <b>My Profile</b> first, then I can check your eligibility!";
+    const cgpa = parseFloat(MY_PROFILE.cgpa) || 0;
+    const backlogs = parseInt(MY_PROFILE.backlogs) || 0;
+    const branch = (MY_PROFILE.branch || '').toUpperCase();
+    const eligible = DRIVES.filter(d => {
+      const branches = JSON.parse(d.allowed_branches || '[]').map(b => b.toUpperCase());
+      return cgpa >= d.min_cgpa && backlogs <= d.max_backlogs && (branches.length === 0 || branches.includes(branch));
+    });
+    if (!eligible.length) return `Based on your profile (CGPA: ${cgpa}, Branch: ${branch}, Backlogs: ${backlogs}), you don't meet the criteria for any current active drive. Keep improving your CGPA and clear backlogs!`;
+    return `✅ <b>You are eligible for ${eligible.length} drive(s):</b><br><br>` + eligible.map(d =>
+      `🏢 <b>${d.company}</b> — ${d.role}<br>&nbsp;&nbsp;💰 ${d.package_lpa > 0 ? '₹'+d.package_lpa+' LPA' : 'Package TBD'} &nbsp;|&nbsp; 📍 ${d.location || 'TBD'} &nbsp;|&nbsp; 📅 Deadline: ${d.deadline || 'Open'}`
+    ).join('<br><br>') + '<br><br>Go to your <b>Dashboard</b> to apply!';
+  }
+
+  // CGPA CUTOFFS
+  if (ql.includes('cgpa') || ql.includes('cutoff') || ql.includes('criteria') || (ql.includes('minimum') && !ql.includes('backlog'))) {
+    if (!DRIVES.length) return "No active drives right now. 📭";
+    return "📊 <b>CGPA Requirements for Active Drives:</b><br><br>" + DRIVES.map(d =>
+      `🏢 <b>${d.company}</b> — ${d.role}<br>&nbsp;&nbsp;• Min CGPA: <b>${d.min_cgpa}</b> &nbsp;|&nbsp; Max Backlogs: <b>${d.max_backlogs}</b><br>&nbsp;&nbsp;• Branches: ${JSON.parse(d.allowed_branches||'[]').join(', ') || 'All'}`
+    ).join('<br><br>');
+  }
+
+  // ACTIVE DRIVES
+  if (ql.includes('drive') || ql.includes('company') || ql.includes('opening') || ql.includes('active') || (ql.includes('current') && !ql.includes('status'))) {
+    if (!DRIVES.length) return "No active drives at the moment. 📭 You'll be notified when new ones open!";
+    return `📋 <b>${DRIVES.length} active drive(s):</b><br><br>` + DRIVES.map((d,i) =>
+      `${i+1}. <b>${d.company}</b> — ${d.role}<br>&nbsp;&nbsp;${d.package_lpa > 0 ? '💰 ₹'+d.package_lpa+' LPA &nbsp;|&nbsp; ' : ''}📍 ${d.location || 'TBD'} &nbsp;|&nbsp; 🏷 ${d.job_type}<br>&nbsp;&nbsp;📅 Deadline: ${d.deadline || 'Open'} &nbsp;|&nbsp; CGPA ≥ ${d.min_cgpa}`
+    ).join('<br><br>');
+  }
+
+  // MY APPLICATION STATUS
+  if (ql.includes('my status') || ql.includes('application status') || ql.includes('my application') || ql.includes('applied')) {
+    if (!MY_APPS.length) return "You haven't applied to any drives yet. Go to your <b>Dashboard</b> to see eligible drives and apply!";
+    return "📊 <b>Your Application Status:</b><br><br>" + MY_APPS.map(a => {
+      const icons = {applied:'🔵',aptitude:'📝',interview_scheduled:'🟠',selected:'🎉',rejected:'🔴'};
+      return `${icons[a.status]||'•'} <b>${a.company}</b> — ${a.role}: <b>${a.status.replace('_',' ').toUpperCase()}</b>`;
+    }).join('<br>');
+  }
+
+  // MY INTERVIEW
+  if (ql.includes('my interview') || (ql.includes('interview') && (ql.includes('when') || ql.includes('my') || ql.includes('schedule')))) {
+    const scheduled = MY_APPS.filter(a => a.status === 'interview_scheduled');
+    if (scheduled.length) {
+      return "📅 <b>Your Scheduled Interviews:</b><br><br>" + scheduled.map(a =>
+        `🏢 <b>${a.company}</b> — ${a.role}<br>&nbsp;&nbsp;Check your notification 🔔 for exact date, time & venue.`
+      ).join('<br><br>');
+    }
+    return "📅 No interviews scheduled for you yet. After applying, the TPO will schedule your interview and you'll get a 🔔 notification with date, time & venue.";
+  }
+
+  // DEADLINES
+  if (ql.includes('deadline') || ql.includes('last date') || ql.includes('close') || ql.includes('expire')) {
+    if (!DRIVES.length) return "No active drives right now, no deadlines to worry about! 🎉";
+    return "⏰ <b>Application Deadlines:</b><br><br>" + DRIVES.map(d =>
+      `• <b>${d.company}</b> (${d.role}): <b style='color:#dc2626;'>${d.deadline || 'Open / No deadline set'}</b>`
+    ).join('<br>') + '<br><br>💡 Apply early — seats are limited!';
+  }
+
+  // INTERVIEW GENERAL
+  if (ql.includes('interview') || ql.includes('round') || ql.includes('process')) {
+    return "📅 <b>Interview Process:</b><br><br>1️⃣ Apply for a drive on your Dashboard<br>2️⃣ TPO reviews applications<br>3️⃣ Shortlisted students receive a 🔔 notification<br>4️⃣ Your status changes to 'Interview Scheduled'<br>5️⃣ Date, time & venue shared via notification<br><br>⚡ Check your notification bell daily!";
+  }
+
+  // HOW TO APPLY
+  if (ql.includes('apply') || ql.includes('how to') || ql.includes('application') || ql.includes('register for')) {
+    return "📝 <b>How to Apply:</b><br><br>1️⃣ Go to your <b>Student Dashboard</b><br>2️⃣ Scroll to 'Eligible Drives'<br>3️⃣ Click <b>Apply Now</b> next to a drive<br>4️⃣ Track your status in the Application Tracker<br><br>💡 Only drives matching your CGPA & branch appear — so keep your profile updated!";
+  }
+
+  // VENUE
+  if (ql.includes('venue') || ql.includes('where') || ql.includes('location') || ql.includes('room') || ql.includes('hall')) {
+    return "📍 <b>Interview Venues:</b><br><br>• <b>On-campus:</b> Seminar Hall or Computer Labs (exact room in 🔔 notification)<br>• <b>Online:</b> Google Meet / Teams link shared via notification<br>• <b>Off-campus:</b> TPO communicates address separately<br><br>Check your notifications 1 day before!";
+  }
+
+  // RESULTS / STATUS
+  if (ql.includes('result') || ql.includes('selected') || ql.includes('rejected') || ql.includes('outcome')) {
+    return "📊 <b>How to Check Results:</b><br><br>Results update in real-time in 2 places:<br>1️⃣ <b>Application Tracker</b> on your Dashboard: Applied → Aptitude → Interview → Selected ✅<br>2️⃣ <b>Notification Bell</b> 🔔 — instant update when status changes";
+  }
+
+  // DOCUMENTS
+  if (ql.includes('document') || ql.includes('bring') || ql.includes('carry') || ql.includes('need') || ql.includes('require')) {
+    return "📁 <b>Documents to Keep Ready:</b><br><br>• 📄 Resume (generate from Resume Wizard!)<br>• 🪪 College ID card<br>• 📋 Marksheets (all semesters)<br>• 📸 2–3 passport size photos<br>• 💻 Laptop + charger (for online rounds)<br>• 🖊️ Pen & notepad<br>• 🪪 Aadhaar/PAN card (some companies require)";
+  }
+
+  // TIPS
+  if (ql.includes('tip') || ql.includes('crack') || ql.includes('prepare') || ql.includes('advice') || ql.includes('hack')) {
+    return "💡 <b>Top Interview Tips:</b><br><br>📚 <b>Technical:</b><br>• Practise DSA on LeetCode (Easy → Medium)<br>• Revise OOP, DBMS, OS, CN fundamentals<br>• Be ready for SQL queries & system design<br><br>🗣️ <b>Communication:</b><br>• Prepare a strong 2-min self-introduction<br>• Know every line of your resume<br>• Ask 1–2 smart questions at the end<br><br>🧘 <b>Mindset:</b><br>• Sleep 8 hrs before the interview<br>• Join/arrive 10 mins early<br>• Be honest — interviewers value clarity!";
+  }
+
+  // RESUME
+  if (ql.includes('resume') || ql.includes(' cv') || ql.includes('pdf') || ql === 'cv') {
+    return "📄 <b>Resume Generation:</b><br><br>1️⃣ Go to <b>Resume</b> in the nav bar<br>2️⃣ Ensure your profile is complete (skills, projects, certs)<br>3️⃣ Click <b>Download Resume PDF</b><br>4️⃣ Get a professional PDF instantly! 🎉<br><br>💡 Higher profile completeness = better quality score!";
+  }
+
+  // SKILL GAP
+  if (ql.includes('skill') || ql.includes('gap') || ql.includes('learn') || ql.includes('course') || ql.includes('roadmap')) {
+    return "🧠 <b>Skill Gap Analysis:</b><br><br>1️⃣ Click <b>Skill Gap</b> in the nav bar<br>2️⃣ Select your target role (SWE, Data Analyst, ML, etc.)<br>3️⃣ See your Career Readiness Score 📊<br>4️⃣ Get a personalised learning roadmap with free course links<br><br>🔴 Missing skills | 🟢 Acquired skills";
+  }
+
+  // BACKLOG
+  if (ql.includes('backlog')) {
+    return "📚 <b>Backlog Policy:</b><br><br>Most companies require <b>0 active backlogs</b>. Premium companies are very strict about this.<br><br>• Active backlogs = subjects currently pending<br>• Update your count in <b>My Profile</b><br>• Work with your faculty advisor to clear them ASAP!";
+  }
+
+  // PROFILE
+  if (ql.includes('profile') || ql.includes('update') || ql.includes('edit my')) {
+    return "👤 <b>Your Profile:</b><br><br>Keep your profile updated to:<br>• Appear in eligible drives automatically<br>• Get a better resume quality score<br>• Receive targeted notifications<br><br>Fill in CGPA, backlogs, branch, skills, projects, certs & phone.<br>Go to <b>Profile</b> in the nav bar.";
+  }
+
+  // PACKAGE / SALARY
+  if (ql.includes('package') || ql.includes('salary') || ql.includes('lpa') || ql.includes('ctc')) {
+    if (!DRIVES.length) return "No active drives to show packages for right now.";
+    const withPkg = DRIVES.filter(d => d.package_lpa > 0);
+    if (!withPkg.length) return "Package details haven't been listed for current drives. Check back soon or contact the TPO for information.";
+    return "💰 <b>Packages for Active Drives:</b><br><br>" + withPkg.map(d =>
+      `• <b>${d.company}</b> — ${d.role}: <b style='color:#16a34a;'>₹${d.package_lpa} LPA</b>`
+    ).join('<br>');
+  }
+
+  return "I'm not sure about that! 🤔 Try rephrasing or ask about:<br>• <b>Active drives</b> | <b>My eligibility</b> | <b>CGPA cutoffs</b><br>• <b>Deadlines</b> | <b>Interview schedule</b> | <b>My status</b><br><br>Or tap a quick button above, or type <b>help</b>.";
+}
+
+function now() { return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+
+function addMsg(text, role) {
+  const body = document.getElementById('chatBody');
+  const div = document.createElement('div');
+  div.className = `msg msg-${role}`;
+  div.innerHTML = `<div class="msg-bubble">${text}</div><div class="msg-time">${now()}</div>`;
+  body.appendChild(div);
+  body.scrollTop = body.scrollHeight;
+}
+
+function showTyping() {
+  const body = document.getElementById('chatBody');
+  const div = document.createElement('div');
+  div.className='msg msg-bot'; div.id='typing';
+  div.innerHTML=`<div class="msg-bubble"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>`;
+  body.appendChild(div); body.scrollTop=body.scrollHeight;
+}
+function removeTyping() { const t=document.getElementById('typing'); if(t)t.remove(); }
+
+function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
+  if (!q) return;
+  addMsg(q, 'user'); input.value='';
+  showTyping();
+  setTimeout(() => { removeTyping(); addMsg(findAnswer(q), 'bot'); }, 500 + Math.random()*400);
+}
+function quickAsk(q) { document.getElementById('chatInput').value=q; sendMsg(); }
+
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const driveCount = DRIVES.length;
+    addMsg(`👋 Hi <b>${document.title.split('–')[0].trim()}</b>! I'm <b>PlacementBot</b> — your 24/7 placement assistant.<br><br>` +
+      (driveCount > 0 ? `📣 <b>${driveCount} active drive(s)</b> are currently open. Ask me about your eligibility, deadlines, or anything else!` : 'No active drives right now, but ask me anything — I\'m here to help! 😊'), 'bot');
+  }, 300);
+});
+</script>
+{% endblock %}

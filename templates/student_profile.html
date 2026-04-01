@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% block title %}My Profile – PlacementPro{% endblock %}
+{% block extra_style %}
+<style>
+.section-label { font-family:'Syne',sans-serif; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin:1.5rem 0 0.75rem; border-bottom:1px solid var(--border); padding-bottom:0.4rem; }
+.project-entry, .cert-entry { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:1rem; margin-bottom:0.75rem; position:relative; }
+.remove-btn { position:absolute; top:0.5rem; right:0.75rem; background:none; border:none; cursor:pointer; color:var(--muted); font-size:1rem; }
+.remove-btn:hover { color:var(--red); }
+.tag-wrap { display:flex; flex-wrap:wrap; gap:0.35rem; padding:0.5rem; border:1px solid var(--border); border-radius:8px; background:white; min-height:44px; cursor:text; }
+.skill-tag { background:var(--blue-light); color:var(--blue); border-radius:20px; padding:0.18rem 0.65rem; font-size:0.8rem; font-weight:600; display:flex; align-items:center; gap:0.3rem; }
+.skill-tag .x { cursor:pointer; }
+#skillInput { border:none; outline:none; font-size:0.875rem; flex:1; min-width:80px; font-family:'Inter',sans-serif; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="/student" style="color:var(--muted); font-size:0.85rem;">← Dashboard</a>
+  <h1>✏️ Edit Profile</h1>
+  <p>Keep your profile updated to stay eligible for the latest drives.</p>
+</div>
+
+<div style="display:grid; grid-template-columns:2fr 1fr; gap:1.5rem; align-items:start;">
+  <div class="card">
+    <form method="POST" action="/student/profile" id="profileForm" enctype="multipart/form-data">
+
+      <div class="section-label">Profile Photo</div>
+      <div class="form-group">
+        <label>Upload Your Photo</label>
+        <div style="display:flex; align-items:center; gap:1rem; margin-bottom:0.5rem;">
+          {% if profile and profile.photo_url %}
+          <img src="{{ profile.photo_url }}" alt="Profile Photo" style="width:80px;height:80px;object-fit:cover;border-radius:50%;border:3px solid var(--blue);">
+          {% else %}
+          <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#1d4ed8,#7c3aed);display:flex;align-items:center;justify-content:center;color:white;font-size:2rem;font-weight:800;">
+            {{ session.name[0] }}
+          </div>
+          {% endif %}
+          <div>
+            <input type="file" name="photo" accept="image/*" style="font-size:0.85rem;">
+            <div class="form-hint">JPG or PNG. Photo appears on your profile but is NOT included in the resume PDF.</div>
+          </div>
+        </div>
+      </div>
+      <div class="section-label">Academic Info</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>CGPA (out of 10)</label>
+          <input type="number" name="cgpa" step="0.01" min="0" max="10" value="{{ profile.cgpa if profile else '' }}" required>
+        </div>
+        <div class="form-group">
+          <label>Active Backlogs</label>
+          <input type="number" name="backlogs" min="0" value="{{ profile.backlogs if profile else '0' }}" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Branch / Programme</label>
+          <select name="branch" required>
+            <option value="">Select Branch</option>
+            {% for b in ['CS','MCA','IT','ECE','EEE','Mech','Civil'] %}
+            <option value="{{ b }}" {% if profile and profile.branch == b %}selected{% endif %}>{{ b }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date of Birth</label>
+          <input type="date" name="dob" value="{{ profile.dob if profile else '' }}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" name="phone" value="{{ profile.phone if profile else '' }}" placeholder="10-digit number">
+        </div>
+        <div class="form-group">
+          <label>LinkedIn Profile URL</label>
+          <input type="url" name="linkedin" value="{{ profile.linkedin if profile and profile.linkedin else '' }}" placeholder="https://linkedin.com/in/yourname">
+        </div>
+      </div>
+
+      <div class="section-label">Technical Skills</div>
+      <div class="form-group">
+        <label>Skills (type and press Enter or comma)</label>
+        <div class="tag-wrap" id="tagWrap" onclick="document.getElementById('skillInput').focus()">
+          <input id="skillInput" placeholder="e.g. Python, React, SQL…">
+        </div>
+        <input type="hidden" name="skills" id="skillsHidden">
+        <div class="form-hint">Press Enter or comma after each skill.</div>
+      </div>
+
+      <div class="section-label">Projects</div>
+      <div id="projectsContainer">
+        {% if profile and profile.projects %}
+          {% for p in profile.projects|from_json %}
+          <div class="project-entry">
+            <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Project Name</label>
+                <input name="project_name" value="{{ p.name }}" placeholder="Project title">
+              </div>
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Description</label>
+                <input name="project_desc" value="{{ p.desc }}" placeholder="Brief description">
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:0.5rem; margin-bottom:0;">
+              <label>GitHub / Live URL (optional)</label>
+              <input name="project_url" value="{{ p.url if p.url is defined else '' }}" placeholder="https://github.com/…">
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="project-entry">
+            <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0;"><label>Project Name</label><input name="project_name" placeholder="Project title"></div>
+              <div class="form-group" style="margin-bottom:0;"><label>Description</label><input name="project_desc" placeholder="Brief description"></div>
+            </div>
+            <div class="form-group" style="margin-top:0.5rem; margin-bottom:0;">
+              <label>GitHub / Live URL (optional)</label><input name="project_url" placeholder="https://github.com/…">
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      <button type="button" onclick="addProject()" class="btn btn-ghost btn-sm" style="margin-bottom:1rem;">+ Add Project</button>
+
+      <div class="section-label">Certificates & Achievements</div>
+      <div id="certsContainer">
+        {% if profile and profile.certificates %}
+          {% for c in profile.certificates|from_json %}
+          <div class="cert-entry">
+            <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:0.75rem;">
+              <div class="form-group" style="margin:0;"><label>Certificate Title</label><input name="cert_title" value="{{ c.title }}" placeholder="e.g. Python for Everybody"></div>
+              <div class="form-group" style="margin:0;"><label>Issuer</label><input name="cert_issuer" value="{{ c.issuer }}" placeholder="Coursera, NPTEL…"></div>
+              <div class="form-group" style="margin:0;"><label>Year</label><input name="cert_year" value="{{ c.year }}" placeholder="2024"></div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="cert-entry">
+            <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+            <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:0.75rem;">
+              <div class="form-group" style="margin:0;"><label>Certificate Title</label><input name="cert_title" placeholder="e.g. Python for Everybody"></div>
+              <div class="form-group" style="margin:0;"><label>Issuer</label><input name="cert_issuer" placeholder="Coursera, NPTEL…"></div>
+              <div class="form-group" style="margin:0;"><label>Year</label><input name="cert_year" placeholder="2024"></div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      <button type="button" onclick="addCert()" class="btn btn-ghost btn-sm" style="margin-bottom:1.5rem;">+ Add Certificate</button>
+
+      <button type="submit" class="btn btn-primary" style="width:100%; padding:0.75rem; font-size:1rem;">💾 Save Profile</button>
+    </form>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div>
+    {% if profile and profile.cgpa %}
+    <div class="card" style="margin-bottom:1rem; text-align:center; border-top:3px solid var(--blue);">
+      <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem;">Current Profile</div>
+      <div style="font-family:'Syne',sans-serif; font-size:2.5rem; font-weight:800; color:var(--blue);">{{ profile.cgpa }}</div>
+      <div style="font-size:0.8rem; color:var(--muted);">CGPA</div>
+      <div style="display:flex; justify-content:space-around; margin-top:1rem; font-size:0.85rem;">
+        <div><strong>{{ profile.branch }}</strong><div style="color:var(--muted); font-size:0.75rem;">Branch</div></div>
+        <div><strong>{{ profile.backlogs }}</strong><div style="color:var(--muted); font-size:0.75rem;">Backlogs</div></div>
+      </div>
+      {% if profile.linkedin %}
+      <a href="{{ profile.linkedin }}" target="_blank" class="btn btn-ghost btn-sm" style="margin-top:1rem; width:100%;">🔗 LinkedIn Profile</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="card" style="background:#eff6ff; border-color:#bfdbfe;">
+      <div style="font-size:0.8rem; font-weight:700; color:var(--blue); margin-bottom:0.5rem;">💡 Profile Tips</div>
+      <ul style="font-size:0.82rem; color:var(--text); line-height:1.8; padding-left:1rem;">
+        <li>Add 5+ skills for a strong resume</li>
+        <li>Include 2+ projects with links</li>
+        <li>Add certificates from Coursera, NPTEL</li>
+        <li>LinkedIn URL boosts profile score</li>
+        <li>Keep CGPA and backlogs updated</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_script %}
+<script>
+// Skills tag input
+const existingSkills = (() => {
+  try { return JSON.parse('{{ (profile.skills if profile and profile.skills else "[]")|safe }}'); }
+  catch { return []; }
+})();
+let skills = [...existingSkills];
+
+function renderTags() {
+  const wrap = document.getElementById('tagWrap');
+  const inp = document.getElementById('skillInput');
+  wrap.innerHTML = '';
+  skills.forEach((s, i) => {
+    const t = document.createElement('div');
+    t.className = 'skill-tag';
+    t.innerHTML = `${s} <span class="x" onclick="removeSkill(${i})">✕</span>`;
+    wrap.appendChild(t);
+  });
+  wrap.appendChild(inp);
+  document.getElementById('skillsHidden').value = skills.join(',');
+}
+
+function removeSkill(i) { skills.splice(i, 1); renderTags(); }
+
+document.getElementById('skillInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = this.value.replace(',','').trim();
+    if (val && !skills.includes(val)) { skills.push(val); renderTags(); }
+    this.value = '';
+  }
+});
+renderTags();
+
+function addProject() {
+  const c = document.getElementById('projectsContainer');
+  const d = document.createElement('div');
+  d.className = 'project-entry';
+  d.innerHTML = `
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+    <div class="form-row">
+      <div class="form-group" style="margin-bottom:0;"><label>Project Name</label><input name="project_name" placeholder="Project title"></div>
+      <div class="form-group" style="margin-bottom:0;"><label>Description</label><input name="project_desc" placeholder="Brief description"></div>
+    </div>
+    <div class="form-group" style="margin-top:0.5rem; margin-bottom:0;">
+      <label>GitHub / Live URL (optional)</label><input name="project_url" placeholder="https://github.com/…">
+    </div>`;
+  c.appendChild(d);
+}
+
+function addCert() {
+  const c = document.getElementById('certsContainer');
+  const d = document.createElement('div');
+  d.className = 'cert-entry';
+  d.innerHTML = `
+    <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+    <div style="display:grid; grid-template-columns:2fr 1fr 1fr; gap:0.75rem;">
+      <div class="form-group" style="margin:0;"><label>Certificate Title</label><input name="cert_title" placeholder="e.g. Python for Everybody"></div>
+      <div class="form-group" style="margin:0;"><label>Issuer</label><input name="cert_issuer" placeholder="Coursera, NPTEL…"></div>
+      <div class="form-group" style="margin:0;"><label>Year</label><input name="cert_year" placeholder="2024"></div>
+    </div>`;
+  c.appendChild(d);
+}
+</script>
+{% endblock %}

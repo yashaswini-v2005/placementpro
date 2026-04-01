@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Alumni Profile – PlacementPro{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="/alumni" style="color:var(--muted);font-size:0.85rem;">← Dashboard</a>
+  <h1>✏️ Edit Alumni Profile</h1>
+  <p>Your profile is visible to students seeking mentors and referrals.</p>
+</div>
+<div style="max-width:600px;">
+  <div class="card">
+    <form method="POST" action="/alumni/profile">
+      <div class="form-row">
+        <div class="form-group"><label>Current Company</label><input name="company" value="{{ ap.company if ap else '' }}" required placeholder="Google"></div>
+        <div class="form-group"><label>Current Role</label><input name="role" value="{{ ap.role if ap else '' }}" required placeholder="Software Engineer"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Batch Year</label><input name="batch_year" value="{{ ap.batch_year if ap else '' }}" placeholder="2022"></div>
+        <div class="form-group"><label>Branch</label>
+          <select name="branch">
+            {% for b in ['CS','MCA','IT','ECE','EEE','Mech','Civil'] %}
+            <option value="{{ b }}" {% if ap and ap.branch == b %}selected{% endif %}>{{ b }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>LinkedIn URL</label><input type="url" name="linkedin" value="{{ ap.linkedin if ap else '' }}" placeholder="https://linkedin.com/in/yourname"></div>
+      <div class="form-group"><label>Bio / What you can help with</label>
+        <textarea name="bio" rows="3" style="width:100%;padding:0.6rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;font-family:inherit;" placeholder="e.g. Can help with DSA prep, resume reviews, interview tips for SDE roles…">{{ ap.bio if ap else '' }}</textarea>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;">
+        <input type="checkbox" name="open_to_mentor" id="mentor_check" {% if not ap or ap.open_to_mentor %}checked{% endif %}>
+        <label for="mentor_check" style="margin:0;font-weight:600;">Open to mentorship requests</label>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">💾 Save Profile</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
